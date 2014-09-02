@@ -1,0 +1,64 @@
+package net.bmjames.opts.internal
+
+import scalaz._
+import scalaz.syntax.monad._
+
+import ListT.listTMonadPlus
+
+final case class NondetT[F[_], A](run: ListT[BoolState[F]#λ, A]) {
+
+  import NondetT._
+
+  def !(that: NondetT[F, A])(implicit F: Monad[F]): NondetT[F, A] = {
+    val run2 = for {
+      s <- mState[F].get.liftM[ListT]
+      if !s
+      a2 <- that.run
+    } yield a2
+    NondetT(ltmp[F].plus(run, run2))
+  }
+}
+
+private[internal] trait BoolState[F[_]] {
+  type λ[A] = StateT[F, Boolean, A]
+}
+
+object NondetT {
+
+  def cut[F[_]: Monad]: NondetT[F, Unit] =
+    NondetT(mState[F].put(true).liftM[ListT])
+
+  def disamb[F[_]: Monad, A](allowAmb: Boolean, xs: NondetT[F, A]): F[Option[A]] =
+    xs.run
+      .take(if (allowAmb) 1 else 2).run
+      .eval(false)
+      .map {
+        case List(x) => Some(x)
+        case _       => None
+      }
+
+  protected def ltmp[F[_]: Monad] = listTMonadPlus[BoolState[F]#λ]
+  protected def mState[F[_]: Monad] = MonadState[({type λ[α,β]=StateT[F,α,β]})#λ, Boolean]
+
+  implicit def nondetTMonadPlus[F[_] : Monad]: MonadPlus[({type λ[α]=NondetT[F,α]})#λ] =
+    new MonadPlus[({type λ[α] = NondetT[F, α]})#λ] {
+      def bind[A, B](fa: NondetT[F, A])(f: A => NondetT[F, B]): NondetT[F, B] =
+        NondetT(ltmp[F].bind(fa.run)(f andThen (_.run)))
+
+      def point[A](a: => A): NondetT[F, A] = NondetT(ltmp[F].point(a))
+
+      def empty[A]: NondetT[F, A] = NondetT(ltmp[F].empty)
+
+      def plus[A](a: NondetT[F, A], b: => NondetT[F, A]): NondetT[F, A] =
+        NondetT(ltmp[F].plus(a.run, b.run))
+    }
+
+  implicit def nondetTTrans: MonadTrans[NondetT] =
+    new MonadTrans[NondetT] {
+      implicit def apply[G[_]: Monad]: Monad[({type λ[α]=NondetT[G,α]})#λ] =
+        nondetTMonadPlus[G]
+
+      def liftM[G[_]: Monad, A](a: G[A]): NondetT[G, A] =
+        NondetT(StateT[G, Boolean, A](s => a.map(s -> _)).liftM[ListT])
+    }
+}
