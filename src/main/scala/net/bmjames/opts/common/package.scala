@@ -4,20 +4,9 @@ import net.bmjames.opts.internal.{P, NondetT, uncons, MonadP}
 import net.bmjames.opts.types._
 
 import scalaz._
+import scalaz.std.option._
 import scalaz.syntax.monadPlus._
-import net.bmjames.opts.types.CmdReader
-import net.bmjames.opts.types.OptP
-import net.bmjames.opts.types.NilP
-import net.bmjames.opts.types.AltP
-import scala.Some
-import net.bmjames.opts.types.ErrorMsg
-import net.bmjames.opts.types.OptShort
-import net.bmjames.opts.types.OptLong
-import net.bmjames.opts.types.FlagReader
-import net.bmjames.opts.types.ArgReader
-import net.bmjames.opts.types.MultP
-import net.bmjames.opts.types.OptionReader
-import net.bmjames.opts.types.BindP
+
 
 package object common {
 
@@ -117,7 +106,51 @@ package object common {
         } yield k(x)
     }
 
+  /** The default value of a Parser. This function returns an error if any of the options don't have a default value
+    */
   def evalParser[A](p: Parser[A]): Option[A] =
+    p match {
+      case NilP(r)       => r
+      case OptP(_)       => None
+      case MultP(p1, p2) => evalParser(p2) <*> evalParser(p1)
+      case AltP(p1, p2)  => evalParser(p1) <+> evalParser(p2)
+      case BindP(p, k)   => evalParser(p) >>= k.andThen(evalParser[A])
+    }
+
+  /** Map a polymorphic function over all the options of a parser, and collect the results in a list.
+    */
+  def mapParser[A, B](f: OptHelpInfo => (Opt ~> ({type λ[α]=Const[B,α]})#λ), p: Parser[A]): List[B] = {
+    def flatten[A](t: OptTree[A]): List[A] =
+      t match {
+        case Leaf(x)      => List(x)
+        case MultNode(xs) => xs.flatMap(flatten)
+        case AltNode(xs)  => xs.flatMap(flatten)
+      }
+    flatten(treeMapParser(f, p))
+  }
+
+  /** Like mapParser, but collect the results in a tree structure.
+    */
+  def treeMapParser[A, B](g: OptHelpInfo => (Opt ~> ({type λ[α]=Const[B,α]})#λ), p: Parser[A]): OptTree[B] = {
+    def hasDefault[A](p: Parser[A]): Boolean =
+      evalParser(p).isDefined
+
+    def go[A](m: Boolean, d: Boolean, f: OptHelpInfo => (Opt ~> ({type λ[α]=Const[B,α]})#λ), p: Parser[A]): OptTree[B] =
+      p match {
+        case NilP(_) => MultNode(Nil)
+        case OptP(opt) if opt.props.visibility > Internal => Leaf(f(OptHelpInfo(m, d))(opt).getConst)
+        case OptP(opt) => MultNode(Nil)
+        case MultP(p1, p2) => MultNode(List(go(m, d, f, p1), go(m, d, f, p2)))
+        case AltP(p1, p2) =>
+          val d1 = d || hasDefault(p1) || hasDefault(p2)
+          AltNode(List(go(m, d1, f, p1), go(m, d1, f, p2)))
+        case BindP(p, _) => go(true, d, f, p)
+      }
+
+    simplify(go(false, false, g, p))
+  }
+
+  def simplify[A](as: OptTree[A]): OptTree[A] =
     ???
 
   def isOptionPrefix(n1: OptName, n2: OptName): Boolean =
