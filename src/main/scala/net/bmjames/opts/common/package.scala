@@ -189,8 +189,18 @@ package object common {
     type G[A] = StateT[F, Args, A]
   }
 
-  def searchOpt[F[_]: MonadP, A](pprefs: ParserPrefs, w: OptWord, p: Parser[A]): NondetT[ArgsState[F]#G, Parser[A]] =
-    ???
+  def searchOpt[F[_]: MonadP, A](pprefs: ParserPrefs, w: OptWord, p: Parser[A]): NondetT[ArgsState[F]#G, Parser[A]] = {
+    val f = new (Opt ~> ({type λ[α]=NondetT[ArgsState[F]#G,α]})#λ) {
+      def apply[A](fa: Opt[A]): NondetT[ArgsState[F]#G, A] = {
+        val disambiguate = pprefs.disambiguate && fa.props.visibility > Internal
+        optMatches(disambiguate, fa.main, w) match {
+          case Some(matcher) => matcher.liftM[({type λ[ζ[_],α]=NondetT[ζ,α]})#λ]
+          case None => NondetT.nondetTMonadPlus[ArgsState[F]#G].empty
+        }
+      }
+    }
+    searchParser[ArgsState[F]#G, A](f, p)
+  }
 
   def searchArg[F[_]: MonadP, A](arg: String, p: Parser[A]): NondetT[ArgsState[F]#G, Parser[A]] =
     ???
