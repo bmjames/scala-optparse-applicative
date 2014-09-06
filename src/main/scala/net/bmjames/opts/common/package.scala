@@ -185,27 +185,31 @@ package object common {
       case _                          => false
     }
 
-  def searchOpt[F[_]: MonadP, A](pprefs: ParserPrefs, w: OptWord, p: Parser[A]): NondetT[({type λ[α]=StateT[F,Args,α]})#λ, Parser[A]] =
+  trait ArgsState[F[_]] {
+    type G[A] = StateT[F, Args, A]
+  }
+
+  def searchOpt[F[_]: MonadP, A](pprefs: ParserPrefs, w: OptWord, p: Parser[A]): NondetT[ArgsState[F]#G, Parser[A]] =
     ???
 
-  def searchArg[F[_]: MonadP, A](arg: String, p: Parser[A]): NondetT[({type λ[α]=StateT[F,Args,α]})#λ, Parser[A]] =
+  def searchArg[F[_]: MonadP, A](arg: String, p: Parser[A]): NondetT[ArgsState[F]#G, Parser[A]] =
     ???
 
   def stepParser[F[_]: MonadP, A](pprefs: ParserPrefs,
                                   policy: ArgPolicy,
                                   arg: String,
-                                  p: Parser[A]): NondetT[({type λ[α]=StateT[F,Args,α]})#λ, Parser[A]] =
+                                  p: Parser[A]): NondetT[ArgsState[F]#G, Parser[A]] =
     policy match {
       case SkipOpts => parseWord(arg) match {
         case Some(w) => searchOpt(pprefs, w, p)
         case None    => searchArg(arg, p)
       }
       case AllowOpts =>
-        val p1: NondetT[({type λ[α]=StateT[F,Args,α]})#λ, Parser[A]] = searchArg[F, A](arg, p)
-        val w = P.hoistMaybe[({type λ[α]=NondetT[({type λ[α]=StateT[F,Args,α]})#λ, α]})#λ, OptWord](parseWord(arg))(NondetT.nondetTMonadPlus[({type λ[α]=StateT[F,Args,α]})#λ])
-        val p2: NondetT[({type λ[α]=StateT[F,Args,α]})#λ, Parser[A]] =
-          NondetT.nondetTMonadPlus[({type λ[α]=StateT[F,Args,α]})#λ].bind(w)(searchOpt[F, A](pprefs, _, p))
-        NondetT.nondetTMonadPlus[({type λ[α]=StateT[F,Args,α]})#λ].plus(p1, p2)
+        val p1: NondetT[ArgsState[F]#G, Parser[A]] = searchArg[F, A](arg, p)
+        val w = P.hoistMaybe[({type λ[α]=NondetT[ArgsState[F]#G, α]})#λ, OptWord](parseWord(arg))(NondetT.nondetTMonadPlus[ArgsState[F]#G])
+        val p2: NondetT[ArgsState[F]#G, Parser[A]] =
+          NondetT.nondetTMonadPlus[ArgsState[F]#G].bind(w)(searchOpt[F, A](pprefs, _, p))
+        NondetT.nondetTMonadPlus[ArgsState[F]#G].plus(p1, p2)
     }
 
   def runParser[F[_]: MonadP, A](policy: ArgPolicy, p: Parser[A], args: Args): F[(Args, A)] =
