@@ -69,6 +69,12 @@ package object common {
     }
   }
 
+  def isArg[A](r: OptReader[A]): Boolean =
+    r match {
+      case ArgReader(_) => true
+      case _            => false
+    }
+
   final case class OptWord(name: OptName, value: Option[String])
 
   def parseWord(s: String): Option[OptWord] =
@@ -202,8 +208,21 @@ package object common {
     searchParser[ArgsState[F]#G, A](f, p)
   }
 
-  def searchArg[F[_]: MonadP, A](arg: String, p: Parser[A]): NondetT[ArgsState[F]#G, Parser[A]] =
-    ???
+  import NondetT._
+
+  def searchArg[F[_]: MonadP, A](arg: String, p: Parser[A]): NondetT[ArgsState[F]#G, Parser[A]] = {
+    val f = new (Opt ~> ({type λ[α]=NondetT[ArgsState[F]#G,α]})#λ) {
+      def apply[A](fa: Opt[A]): NondetT[ArgsState[F]#G, A] =
+        nondetTMonadPlus[ArgsState[F]#G].bind(
+          if (isArg(fa.main)) cut[ArgsState[F]#G] else nondetTMonadPlus[ArgsState[F]#G].point(()))(
+          p => argMatches[F, A](fa.main, arg) match {
+            case Some(matcher) => matcher.liftM[({type λ[ζ[_],α]=NondetT[ζ,α]})#λ]
+            case None => nondetTMonadPlus[ArgsState[F]#G].empty
+          }
+        )
+    }
+    searchParser[ArgsState[F]#G, A](f, p)
+  }
 
   def stepParser[F[_]: MonadP, A](pprefs: ParserPrefs,
                                   policy: ArgPolicy,
@@ -222,16 +241,44 @@ package object common {
         NondetT.nondetTMonadPlus[ArgsState[F]#G].plus(p1, p2)
     }
 
-  def runParser[F[_]: MonadP, A](policy: ArgPolicy, p: Parser[A], args: Args): F[(Args, A)] =
-    ???
+  /** Apply a Parser to a command line, and return a result and leftover arguments.
+    * This function returns an error if any parsing error occurs, or if any options are missing and don't have a default value.
+    */
+  def runParser[F[_], A](policy: ArgPolicy, p: Parser[A], args: Args)(implicit F: MonadP[F]): F[(Args, A)] = {
+    lazy val result = evalParser(p).map(args -> _)
+
+    def doStep(prefs: ParserPrefs, arg: String, argt: Args): F[(Args, Option[Parser[A]])] =
+      disamb[ArgsState[F]#G, Parser[A]](! prefs.disambiguate, stepParser(prefs, policy, arg, p)).run(argt)
+
+    (policy, args) match {
+      case (SkipOpts, "--" :: argt) => runParser(AllowOpts, p, argt)
+      case (_, Nil) => F.exit(p, result)
+      case (_, arg :: argt) =>
+        for {
+          prefs <- F.getPrefs
+          s     <- doStep(prefs, arg, argt)
+          (args1, mp) = s
+          run <- mp match {
+            case None => P.hoistMaybe[F, (Args, A)](result) <+> parseError(arg)
+            case Some(p1) => runParser(policy, p1, args1)
+          }
+        } yield run
+    }
+  }
+
+  def parseError[F[_], A](arg: String)(implicit F: MonadP[F]): F[A] = {
+    val msg = if (arg.startsWith("-")) s"Invalid option `$arg'"
+              else s"Invalid argument `$arg'"
+    F.error(ErrorMsg(msg))
+  }
 
   def getPolicy[A](i: ParserInfo[A]): ArgPolicy =
-    ???
+    if (i.intersperse) SkipOpts else AllowOpts
 
   def runParserInfo[F[_]: MonadP, A](i: ParserInfo[A], args: Args): F[A] =
-    ???
+    runParserFully(getPolicy(i), i.parser, args)
 
   def runParserFully[F[_]: MonadP, A](policy: ArgPolicy, p: Parser[A], args: Args): F[A] =
-    ???
+    for ((Nil, r) <- runParser(policy, p, args)) yield r
 
 }

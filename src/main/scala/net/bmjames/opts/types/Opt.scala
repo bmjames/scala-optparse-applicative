@@ -1,6 +1,7 @@
 package net.bmjames.opts.types
 
 import scalaz.Functor
+import scalaz.syntax.functor._
 
 /** A single option of a parser.
   */
@@ -12,7 +13,11 @@ final case class OptProperties(visibility: OptVisibility)
 
 object Opt {
 
-  implicit val optFunctor: Functor[Opt] = ???
+  implicit val optFunctor: Functor[Opt] =
+    new Functor[Opt] {
+      def map[A, B](fa: Opt[A])(f: A => B): Opt[B] =
+        fa.copy(main = fa.main.map(f))
+    }
 
 }
 

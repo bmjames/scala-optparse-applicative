@@ -12,7 +12,8 @@ import scalaz.syntax.functor._
  */
 final case class ParserInfo[A](parser: Parser[A],
                               fullDesc: Boolean,
-                              failureCode: Int)
+                              failureCode: Int,
+                              intersperse: Boolean)
 
 object ParserInfo {
 
