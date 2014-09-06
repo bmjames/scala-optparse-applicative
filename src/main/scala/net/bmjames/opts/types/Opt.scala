@@ -28,7 +28,9 @@ case class MultNode[A](as: List[OptTree[A]]) extends OptTree[A]
 case class AltNode[A](as: List[OptTree[A]]) extends OptTree[A]
 
 sealed trait OptVisibility extends Ordered[OptVisibility] {
-  def compare(that: OptVisibility): Int = ???
+  private val toInt: OptVisibility => Int =
+    Map(Internal -> 1, Hidden -> 2, Visible -> 3)
+  def compare(that: OptVisibility): Int = toInt(this) - toInt(that)
 }
 
 case object Internal extends OptVisibility

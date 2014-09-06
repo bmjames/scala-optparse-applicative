@@ -150,14 +150,62 @@ package object common {
     simplify(go(false, false, g, p))
   }
 
-  def simplify[A](as: OptTree[A]): OptTree[A] =
-    ???
+  def simplify[A](as: OptTree[A]): OptTree[A] = {
+    def removeMult[A](as: OptTree[A]): List[OptTree[A]] =
+      as match {
+        case MultNode(ts) => ts
+        case t => List(t)
+      }
+
+    def removeAlt[A](as: OptTree[A]): List[OptTree[A]] =
+      as match {
+        case AltNode(ts)   => ts
+        case MultNode(Nil) => Nil
+        case t             => List(t)
+      }
+
+    as match {
+      case Leaf(x) => as
+      case MultNode(xs) => xs.flatMap(x => removeMult(simplify(x))) match {
+        case List(x) => x
+        case xs      => MultNode(xs)
+      }
+      case AltNode(xs) => xs.flatMap(x => removeAlt(simplify(x))) match {
+        case Nil     => MultNode(Nil)
+        case List(x) => x
+        case xs      => AltNode(xs)
+      }
+    }
+  }
 
   def isOptionPrefix(n1: OptName, n2: OptName): Boolean =
     (n1, n2) match {
       case (OptShort(x), OptShort(y)) => x == y
       case (OptLong(x),  OptLong(y))  => y.startsWith(x)
       case _                          => false
+    }
+
+  def searchOpt[F[_]: MonadP, A](pprefs: ParserPrefs, w: OptWord, p: Parser[A]): NondetT[({type λ[α]=StateT[F,Args,α]})#λ, Parser[A]] =
+    ???
+
+  def searchArg[F[_]: MonadP, A](arg: String, p: Parser[A]): NondetT[({type λ[α]=StateT[F,Args,α]})#λ, Parser[A]] =
+    ???
+
+  def stepParser[F[_]: MonadP, A](pprefs: ParserPrefs,
+                                  policy: ArgPolicy,
+                                  arg: String,
+                                  p: Parser[A]): NondetT[({type λ[α]=StateT[F,Args,α]})#λ, Parser[A]] =
+    policy match {
+      case SkipOpts => parseWord(arg) match {
+        case Some(w) => searchOpt(pprefs, w, p)
+        case None    => searchArg(arg, p)
+      }
+      case AllowOpts =>
+        val p1: NondetT[({type λ[α]=StateT[F,Args,α]})#λ, Parser[A]] = searchArg[F, A](arg, p)
+        val w = P.hoistMaybe[({type λ[α]=NondetT[({type λ[α]=StateT[F,Args,α]})#λ, α]})#λ, OptWord](parseWord(arg))(NondetT.nondetTMonadPlus[({type λ[α]=StateT[F,Args,α]})#λ])
+        val p2: NondetT[({type λ[α]=StateT[F,Args,α]})#λ, Parser[A]] =
+          NondetT.nondetTMonadPlus[({type λ[α]=StateT[F,Args,α]})#λ].bind(w)(searchOpt[F, A](pprefs, _, p))
+        NondetT.nondetTMonadPlus[({type λ[α]=StateT[F,Args,α]})#λ].plus(p1, p2)
     }
 
   def runParser[F[_]: MonadP, A](policy: ArgPolicy, p: Parser[A], args: Args): F[(Args, A)] =
