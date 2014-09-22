@@ -2,10 +2,12 @@ package net.bmjames.opts.help
 
 import scalaz.{Applicative, Monoid, MonadPlus}
 import scalaz.std.list._
+import scalaz.std.option._
 import scalaz.syntax.monadPlus._
 import scalaz.syntax.foldable._
 
-import org.kiama.output.PrettyPrinter.{Doc, string}
+import org.kiama.output.PrettyPrinter.Doc
+import org.kiama.output.{PrettyPrinter => PP}
 
 /** The free monoid on a semigroup A */
 case class Chunk[A](run: Option[A])
@@ -24,15 +26,25 @@ object Chunk {
         Chunk(fa.run.flatMap(f andThen (_.run)))
 
       def plus[A](a: Chunk[A], b: => Chunk[A]): Chunk[A] =
-        ???
+        Chunk(a.run <+> b.run)
     }
 
-  implicit def chunkMonoid[A](implicit A: Monoid[A]): Monoid[Chunk[A]] = ???
+  implicit def chunkMonoid[A](implicit A: Monoid[A]): Monoid[Chunk[A]] =
+    new Monoid[Chunk[A]] {
+      def zero: Chunk[A] =
+        Chunk(None)
+      def append(f1: Chunk[A], f2: => Chunk[A]): Chunk[A] =
+        chunked(A.append)(f1, f2)
+    }
 
-  implicit val docMonoid: Monoid[Doc] = ???
+  implicit val docMonoid: Monoid[Doc] =
+    new Monoid[Doc] {
+      def zero: Doc = PP.empty
+      def append(f1: Doc, f2: => Doc): Doc = f1 <> f2
+    }
 
   /** Given a semigroup structure on A, return a monoid structure on Chunk[A] */
-  def chunked[A](f: (A, A) => A): (Chunk[A], Chunk[A]) => Chunk[A] =
+  def chunked[A](f: (A, => A) => A): (Chunk[A], => Chunk[A]) => Chunk[A] =
     {
       case (Chunk(None), y) => y
       case (x, Chunk(None)) => x
@@ -52,7 +64,7 @@ object Chunk {
   def stringChunk(s: String): Chunk[Doc] =
     s match {
       case "" => Monoid[Chunk[Doc]].zero
-      case s  => Applicative[Chunk].pure(string(s))
+      case s  => Applicative[Chunk].pure(PP.string(s))
     }
 
   def paragraph(s: String): Chunk[Doc] =
