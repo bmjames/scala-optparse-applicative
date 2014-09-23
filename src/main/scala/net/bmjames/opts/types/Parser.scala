@@ -1,6 +1,6 @@
 package net.bmjames.opts.types
 
-import net.bmjames.opts.common.mapParser
+import net.bmjames.opts.common.{mapParser, treeMapParser}
 import scalaz.{~>, Const, ApplicativePlus}
 import scalaz.syntax.applicativePlus._
 
@@ -8,6 +8,9 @@ sealed trait Parser[A] {
 
   final def mapPoly[B](f: OptHelpInfo => (Opt ~> ({type λ[α]=Const[B,α]})#λ)): List[B] =
     mapParser[A, B](f, this)
+
+  final def treeMap[B](g: OptHelpInfo => (Opt ~> ({type λ[α]=Const[B,α]})#λ)): OptTree[B] =
+    treeMapParser[A, B](g, this)
 }
 
 case class NilP[A](fa: Option[A]) extends Parser[A]

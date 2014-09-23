@@ -49,4 +49,27 @@ package object help {
         })
     }))
 
+  /** Generate a brief help text for a parser. */
+  def briefDesc[A](pprefs: ParserPrefs, parser: Parser[A]): Chunk[Doc] = {
+    val style = OptDescStyle(sep = "|", hidden = false, surround = true)
+
+    def altNode(chunks: List[Chunk[Doc]]): Chunk[Doc] =
+      chunks match {
+        case List(n) => n
+        case ns      => ns.foldRight(Chunk.zero[Doc])(chunked(_ </> char('|') </> _))
+                          .map(parens)
+      }
+
+    def foldTree(tree: OptTree[Chunk[Doc]]): Chunk[Doc] =
+      tree match {
+        case Leaf(x) => x
+        case MultNode(xs) => xs.foldRight(Chunk.zero[Doc])((x, y) => foldTree(x) <</>> y)
+        case AltNode(xs) => altNode(xs.map(foldTree).filterNot(_.isEmpty))
+      }
+
+    foldTree(parser.treeMap(info => new (Opt ~> ({type λ[α]=Const[Chunk[Doc],α]})#λ) {
+      def apply[A](fa: Opt[A]): Const[Chunk[Doc], A] = Const(optDesc(pprefs, style, info, fa))
+    }))
+  }
+
 }
