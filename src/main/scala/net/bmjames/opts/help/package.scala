@@ -91,4 +91,32 @@ package object help {
     }).flatten)
   }
 
+  def errorHelp(chunk: Chunk[Doc]): ParserHelp =
+    ParserHelp(chunk, empty, empty, empty, empty)
+
+  def headerHelp(chunk: Chunk[Doc]): ParserHelp =
+    ParserHelp(empty, chunk, empty, empty, empty)
+
+  def usageHelp(chunk: Chunk[Doc]): ParserHelp =
+    ParserHelp(empty, empty, chunk, empty, empty)
+
+  def bodyHelp(chunk: Chunk[Doc]): ParserHelp =
+    ParserHelp(empty, empty, empty, chunk, empty)
+
+  def footerHelp(chunk: Chunk[Doc]): ParserHelp =
+    ParserHelp(empty, empty, empty, empty, chunk)
+
+  /** Generate the help text for a program. */
+  def parserHelp[A](pprefs: ParserPrefs, parser: Parser[A]): ParserHelp = {
+    def withTitle(title: String, chunk: Chunk[Doc]): Chunk[Doc] =
+      chunk.map(PP.string(title) <@> _)
+
+    bodyHelp(vsepChunks(List(withTitle("Available options:", fullDesc(pprefs, parser)),
+                             withTitle("Available commands:", cmdDesc(parser)))))
+  }
+
+  /** Generate option summary. */
+  def parserUsage[A](pprefs: ParserPrefs, parser: Parser[A], progName: String): Doc =
+    PP.hsep(List("Usage:", progName, PP.align(extractChunk(briefDesc(pprefs, parser)))))
+
 }
