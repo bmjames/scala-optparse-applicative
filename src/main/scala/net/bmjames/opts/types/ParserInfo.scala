@@ -1,7 +1,11 @@
 package net.bmjames.opts.types
 
+import net.bmjames.opts.help.Chunk
+
 import scalaz.Functor
 import scalaz.syntax.functor._
+
+import net.bmjames.opts.help.Pretty.Doc
 
 /** A full description for a runnable Parser for a program.
   *
@@ -12,6 +16,9 @@ import scalaz.syntax.functor._
  */
 final case class ParserInfo[A](parser: Parser[A],
                               fullDesc: Boolean,
+                              progDesc: Chunk[Doc],
+                              header: Chunk[Doc],
+                              footer: Chunk[Doc],
                               failureCode: Int,
                               intersperse: Boolean)
 

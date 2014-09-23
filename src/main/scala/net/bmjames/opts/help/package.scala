@@ -3,12 +3,14 @@ package net.bmjames.opts
 import net.bmjames.opts.types._
 import net.bmjames.opts.common.showOption
 
+import scalaz._
 import scalaz.syntax.std.list._
 import scalaz.syntax.functor._
 
 package object help {
 
   import Pretty._
+  import Chunk._
 
   /** Style for rendering an option. */
   final case class OptDescStyle(sep: Doc, hidden: Boolean, surround: Boolean)
@@ -35,6 +37,16 @@ package object help {
 
   /** Generate descriptions for commands. */
   def cmdDesc[A](p: Parser[A]): Chunk[Doc] =
-    ???
+    Chunk.vcatChunks(p.mapPoly(_ => new (Opt ~> ({type λ[α]=Const[Chunk[Doc],α]})#λ) {
+      def apply[A](fa: Opt[A]): Const[Chunk[Doc], A] =
+        Const(fa.main match {
+          case CmdReader(cmds, p) =>
+            Chunk.tabulate(
+              for (cmd <- cmds.reverse; d <- p(cmd).map(_.progDesc).toList)
+              yield (string(cmd), align(extractChunk(d)))
+            )
+          case _ => Chunk.zero
+        })
+    }))
 
 }

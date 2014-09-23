@@ -1,9 +1,14 @@
 package net.bmjames.opts.types
 
-import scalaz.ApplicativePlus
+import net.bmjames.opts.common.mapParser
+import scalaz.{~>, Const, ApplicativePlus}
 import scalaz.syntax.applicativePlus._
 
-sealed trait Parser[A]
+sealed trait Parser[A] {
+
+  final def mapPoly[B](f: OptHelpInfo => (Opt ~> ({type λ[α]=Const[B,α]})#λ)): List[B] =
+    mapParser[A, B](f, this)
+}
 
 case class NilP[A](fa: Option[A]) extends Parser[A]
 
