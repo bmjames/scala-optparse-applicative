@@ -94,4 +94,24 @@ package object builder {
   def switch(mod: Mod[FlagFields, Boolean]): Parser[Boolean] =
     flag(false, true, mod)
 
+  /** An option that always fails. */
+  def abortOption[A](err: ParseError, mod: Mod[OptionFields, A => A]): Parser[A => A] =
+    option(_ => ReadM.abort(err), noArgError[A => A](err) |+| value(identity) |+| metavar("") |+| mod)
+
+  /** An option that always fails and displays a message. */
+  def infoOption[A](s: String, mod: Mod[OptionFields, A => A]): Parser[A => A] =
+    abortOption(InfoMsg(s), mod)
+
+  /** Builder for an option taking a String argument. */
+  def strOption(mod: Mod[OptionFields, String]): Parser[String] =
+    option(str[ReadM], mod)
+
+  def option[A](r: String => ReadM[A], mod: Mod[OptionFields, A]): Parser[A] = {
+    val Mod(f, d, g) = metavar[OptionFields, A]("ARG") |+| mod
+    val fields = f(OptionFields(Nil, ErrorMsg("")))
+    val cReader = CReader(r)
+    val reader = OptionReader(fields.names, cReader, fields.noArgError)
+    mkParser(d, g, reader)
+  }
+
 }

@@ -46,12 +46,12 @@ final case class ReadM[A](run: ParseError \/ A)
 object ReadM {
 
   /** Abort option reader by exiting with a ParseError. */
-  def readerAbort[A](e: ParseError): ReadM[A] =
+  def abort[A](e: ParseError): ReadM[A] =
     ReadM(\/.left(e))
 
   /** Abort option reader by exiting with an error message. */
   def readerError[A](e: String): ReadM[A] =
-    readerAbort(ErrorMsg(e))
+    abort(ErrorMsg(e))
 
   implicit val readMMonadPlus: MonadPlus[ReadM] =
     new MonadPlus[ReadM] {
