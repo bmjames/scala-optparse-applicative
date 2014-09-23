@@ -4,8 +4,13 @@ import net.bmjames.opts.types._
 import net.bmjames.opts.common.showOption
 
 import scalaz._
+import scalaz.std.option._
 import scalaz.syntax.std.list._
+import scalaz.syntax.std.boolean._
 import scalaz.syntax.functor._
+
+import org.kiama.output.PrettyPrinter.Doc
+import org.kiama.output.{PrettyPrinter => PP}
 
 package object help {
 
@@ -19,18 +24,18 @@ package object help {
   def optDesc[A](pprefs: ParserPrefs, style: OptDescStyle, info: OptHelpInfo, opt: Opt[A]): Chunk[Doc] = {
     val ns = opt.main.names
     val mv = Chunk.fromString(opt.props.metaVar)
-    val descs = ns.sorted.map(string _ compose showOption)
+    val descs = ns.sorted.map(PP.string _ compose showOption)
     val desc = Chunk.fromList(descs.intersperse(style.sep)) <<+>> mv
     val vis = opt.props.visibility
     val showOpt = if (vis == Hidden) style.hidden else vis == Visible
-    val suffix: Chunk[Doc] = if (info.multi) Chunk.fromString(pprefs.multiSuffix) else Chunk.zero
+    val suffix: Chunk[Doc] = if (info.multi) Chunk.fromString(pprefs.multiSuffix) else Chunk.empty
 
     def render(chunk: Chunk[Doc]): Chunk[Doc] =
-      if (! showOpt) Chunk.zero
+      if (! showOpt) Chunk.empty
       else if (chunk.isEmpty || ! style.surround) chunk <> suffix
-      else if (info.default) chunk.map(brackets) <> suffix
+      else if (info.default) chunk.map(PP.brackets) <> suffix
       else if (descs.drop(1).isEmpty) chunk <> suffix
-      else chunk.map(parens) <> suffix
+      else chunk.map(PP.parens) <> suffix
 
     render(desc)
   }
@@ -43,9 +48,9 @@ package object help {
           case CmdReader(cmds, p) =>
             Chunk.tabulate(
               for (cmd <- cmds.reverse; d <- p(cmd).map(_.progDesc).toList)
-              yield (string(cmd), align(extractChunk(d)))
+              yield (PP.string(cmd), PP.align(extractChunk(d)))
             )
-          case _ => Chunk.zero
+          case _ => Chunk.empty
         })
     }))
 
@@ -56,20 +61,34 @@ package object help {
     def altNode(chunks: List[Chunk[Doc]]): Chunk[Doc] =
       chunks match {
         case List(n) => n
-        case ns      => ns.foldRight(Chunk.zero[Doc])(chunked(_ </> char('|') </> _))
-                          .map(parens)
+        case ns      => ns.foldRight(Chunk.empty[Doc])(chunked(_ </> PP.char('|') </> _))
+                          .map(PP.parens)
       }
 
     def foldTree(tree: OptTree[Chunk[Doc]]): Chunk[Doc] =
       tree match {
         case Leaf(x) => x
-        case MultNode(xs) => xs.foldRight(Chunk.zero[Doc])((x, y) => foldTree(x) <</>> y)
+        case MultNode(xs) => xs.foldRight(Chunk.empty[Doc])((x, y) => foldTree(x) <</>> y)
         case AltNode(xs) => altNode(xs.map(foldTree).filterNot(_.isEmpty))
       }
 
     foldTree(parser.treeMap(info => new (Opt ~> ({type λ[α]=Const[Chunk[Doc],α]})#λ) {
       def apply[A](fa: Opt[A]): Const[Chunk[Doc], A] = Const(optDesc(pprefs, style, info, fa))
     }))
+  }
+
+  /** Generate a full help text for a parser. */
+  def fullDesc[A](pprefs: ParserPrefs, parser: Parser[A]): Chunk[Doc] = {
+    val style = OptDescStyle(sep = ",", hidden = true, surround = false)
+
+    tabulate(parser.mapPoly(info => new (Opt ~> ({type λ[α]=Const[Option[(Doc, Doc)],α]})#λ) {
+      def apply[A](fa: Opt[A]): Const[Option[(Doc, Doc)], A] = Const {
+        val n = optDesc(pprefs, style, info, fa)
+        val h = fa.props.help
+        val hdef = Chunk(fa.props.showDefault.map(s => PP.parens(PP.string("default:") <+> PP.string(s))))
+        (n.isEmpty || n.isEmpty).prevent[Option]((extractChunk(n), PP.align(extractChunk(h <<+>> hdef))))
+      }
+    }).flatten)
   }
 
 }

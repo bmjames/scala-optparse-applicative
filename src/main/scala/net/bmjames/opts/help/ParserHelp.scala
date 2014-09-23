@@ -6,6 +6,8 @@ import scalaz.std.string._
 import scalaz.syntax.semigroup._
 import scalaz.syntax.show._
 
+import org.kiama.output.PrettyPrinter.Doc
+import org.kiama.output.{PrettyPrinter => PP}
 import Pretty._
 
 final case class ParserHelp(error:  Chunk[Doc],
@@ -24,7 +26,7 @@ object ParserHelp {
   implicit val parserHelpMonoid: Monoid[ParserHelp] =
     new Monoid[ParserHelp] {
       override def zero: ParserHelp =
-        ParserHelp(Chunk.zero, Chunk.zero, Chunk.zero, Chunk.zero, Chunk.zero)
+        ParserHelp(Chunk.empty, Chunk.empty, Chunk.empty, Chunk.empty, Chunk.empty)
       override def append(f1: ParserHelp, f2: => ParserHelp): ParserHelp =
         ParserHelp(f1.error  |+| f2.error,
                    f1.header |+| f2.header,
@@ -38,6 +40,6 @@ object ParserHelp {
 
   /** Convert a help text to a String */
   def renderHelp(cols: Int, help: ParserHelp): String =
-    pretty(helpText(help), cols)
+    PP.pretty(helpText(help), cols)
 
 }
