@@ -6,6 +6,8 @@ import net.bmjames.opts.types._
 
 import scalaz.{\/, Show, EitherT, Applicative}
 import scalaz.syntax.semigroup._
+import scalaz.syntax.applicativePlus._
+import scalaz.std.option._
 
 package object builder {
 
@@ -72,5 +74,24 @@ package object builder {
   /** Builder for an argument parser. */
   def argument[A](p: String => Option[A], mod: Mod[ArgumentFields, A]): Parser[A] =
     mkParser(mod.prop, mod.g, ArgReader(CReader(p)))
+
+  /** Builder for a String argument */
+  def strArgument(mod: Mod[ArgumentFields, String]): Parser[String] =
+    argument(str[Option], mod)
+
+  /** Builder for a flag parser. */
+  def flag[A](defV: A, actV: A, mod: Mod[FlagFields, A]): Parser[A] =
+    flag_(actV, mod) <+> defV.pure[Parser]
+
+  /** Builder for a flag parser without a default value. */
+  def flag_[A](actV: A, mod: Mod[FlagFields, A]): Parser[A] ={
+    val fields = mod.f(FlagFields(Nil, actV))
+    val reader = FlagReader(fields.names, fields.active)
+    mkParser(mod.prop, mod.g, reader)
+  }
+
+  /** Builder for a boolean flag. */
+  def switch(mod: Mod[FlagFields, Boolean]): Parser[Boolean] =
+    flag(false, true, mod)
 
 }
