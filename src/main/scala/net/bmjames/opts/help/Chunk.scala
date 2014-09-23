@@ -8,17 +8,20 @@ import scalaz.syntax.std.option._
 import scalaz.syntax.monadPlus._
 import scalaz.syntax.foldable._
 
-import org.kiama.output.PrettyPrinter.Doc
-import org.kiama.output.{PrettyPrinter => PP}
+import Pretty._
 
 /** The free monoid on a semigroup A */
 final case class Chunk[A](run: Option[A]) {
+
   def isEmpty: Boolean = run.isEmpty
+
+  def <>(that: => Chunk[A])(implicit A: Monoid[A]): Chunk[A] =
+    Chunk.chunked[A]((f1, f2) => A.append(f1, f2))(this, that)
 }
 
 object Chunk {
 
-  def empty[A]: Chunk[A] = Chunk(None)
+  def zero[A]: Chunk[A] = Chunk(None)
 
   implicit val chunkMonadPlus: MonadPlus[Chunk] =
     new MonadPlus[Chunk] {
@@ -26,7 +29,7 @@ object Chunk {
         Chunk(Some(a))
 
       def empty[A]: Chunk[A] =
-        Chunk.empty
+        Chunk.zero
 
       def bind[A, B](fa: Chunk[A])(f: A => Chunk[B]): Chunk[B] =
         Chunk(fa.run.flatMap(f andThen (_.run)))
@@ -37,15 +40,8 @@ object Chunk {
 
   implicit def chunkMonoid[A](implicit A: Monoid[A]): Monoid[Chunk[A]] =
     new Monoid[Chunk[A]] {
-      def zero: Chunk[A] = Chunk.empty
-      def append(f1: Chunk[A], f2: => Chunk[A]): Chunk[A] =
-        chunked[A]((f1, f2) => A.append(f1, f2))(f1, f2)
-    }
-
-  implicit val docMonoid: Monoid[Doc] =
-    new Monoid[Doc] {
-      def zero: Doc = PP.empty
-      def append(f1: Doc, f2: => Doc): Doc = f1 <> f2
+      def zero: Chunk[A] = Chunk.zero
+      def append(f1: Chunk[A], f2: => Chunk[A]): Chunk[A] = f1 <> f2
     }
 
   /** Given a semigroup structure on A, return a monoid structure on Chunk[A] */
@@ -57,7 +53,7 @@ object Chunk {
     }
 
   /** Concatenate a list into a Chunk. */
-  def listToChunk[A: Monoid](as: List[A]): Chunk[A] =
+  def fromList[A: Monoid](as: List[A]): Chunk[A] =
     as match {
       case Nil => Monoid[Chunk[A]].zero
       case as  => as.foldMap().point[Chunk]
@@ -76,11 +72,11 @@ object Chunk {
 
   /** Concatenate Chunks vertically. */
   def vcatChunks(chunks: List[Chunk[Doc]]): Chunk[Doc] =
-    chunks.foldRight(Chunk.empty[Doc])(chunked(_ <@> _))
+    chunks.foldRight(Chunk.zero[Doc])(chunked(_ <@> _))
 
   /** Concatenate Chunks vertically separated by empty lines. */
   def vsepChunks(chunks: List[Chunk[Doc]]): Chunk[Doc] =
-    chunks.foldRight(Chunk.empty[Doc])(chunked((x, y) => x <@> PP.empty <@> y))
+    chunks.foldRight(Chunk.zero[Doc])(chunked((x, y) => x <@> empty <@> y))
 
   def extractChunk[A : Monoid](chunk: Chunk[A]): A =
     chunk.run.orZero
@@ -88,20 +84,20 @@ object Chunk {
   def words(s: String): List[String] =
     s.split("\\s+").toList
 
-  def stringChunk(s: String): Chunk[Doc] =
+  def fromString(s: String): Chunk[Doc] =
     s match {
-      case "" => Chunk.empty
-      case s  => Applicative[Chunk].pure(PP.string(s))
+      case "" => Chunk.zero
+      case s  => Applicative[Chunk].pure(string(s))
     }
 
   def paragraph(s: String): Chunk[Doc] =
-    words(s).foldRight(Chunk.empty[Doc])((c, cs) => chunked[Doc](_ </> _)(stringChunk(c), cs))
+    words(s).foldRight(Chunk.zero[Doc])((c, cs) => chunked[Doc](_ </> _)(fromString(c), cs))
 
   def tabulate(table: List[(Doc, Doc)], size: Int = 24): Chunk[Doc] =
     table match {
-      case Nil => Chunk.empty
-      case xs  => Applicative[Chunk].pure(PP.vcat(
-        for ((k, v) <- table) yield PP.indent(PP.padtobreak(size, k <+> v), 2)
+      case Nil => Chunk.zero
+      case xs  => Applicative[Chunk].pure(vcat(
+        for ((k, v) <- table) yield indent(padtobreak(size, k <+> v), 2)
       ))
     }
 }

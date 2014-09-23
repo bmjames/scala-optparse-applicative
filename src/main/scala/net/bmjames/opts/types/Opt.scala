@@ -1,5 +1,8 @@
 package net.bmjames.opts.types
 
+import net.bmjames.opts.help.Chunk
+import org.kiama.output.PrettyPrinter.Doc
+
 import scalaz.Functor
 import scalaz.syntax.functor._
 
@@ -9,7 +12,10 @@ final case class Opt[A](main: OptReader[A], props: OptProperties)
 
 /** Specification for an individual parser option.
   */
-final case class OptProperties(visibility: OptVisibility)
+final case class OptProperties(visibility: OptVisibility,
+                               help: Chunk[Doc],
+                               metaVar: String,
+                               showDefault: Option[String])
 
 object Opt {
 
