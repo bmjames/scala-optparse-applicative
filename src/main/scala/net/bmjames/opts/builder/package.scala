@@ -1,7 +1,9 @@
 package net.bmjames.opts
 
-import net.bmjames.opts.builder.internal.{OptionFields, DefaultProp, HasName, Mod}
-import net.bmjames.opts.types.{ParseError, ReadM, OptLong, OptShort}
+import net.bmjames.opts.internal.min
+import net.bmjames.opts.builder.internal._
+import net.bmjames.opts.types._
+
 import scalaz.{\/, Show, EitherT, Applicative}
 
 package object builder {
@@ -40,4 +42,21 @@ package object builder {
   /** Specify the error to display when no argument is provided to this option. */
   def noArgError[A](e: ParseError): Mod[OptionFields, A] =
     Mod.field(_.copy(noArgError = e))
+
+  /** Specify a metavariable for the argument.
+    *
+    * Metavariables have no effect on the parser, and only serve to specify the symbolic name for
+    * an argument to be displayed in the help text.
+    */
+  def metavar[F[_], A](v: String): Mod[F, A] =
+    Mod.option(_.copy(metaVar = v))
+
+  /** Hide this option from the brief description. */
+  def hidden[F[_], A]: Mod[F, A] =
+    Mod.option(p => p.copy(visibility = min(Hidden, p.visibility)))
+
+  /** Add a command to a subparser option. */
+  def command[A](cmd: String, info: ParserInfo[A]): Mod[CommandFields, A] =
+    Mod.field(p => p.copy(commands = (cmd, info) :: p.commands))
+
 }

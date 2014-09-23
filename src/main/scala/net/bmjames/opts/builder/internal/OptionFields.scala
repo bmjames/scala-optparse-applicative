@@ -1,8 +1,8 @@
 package net.bmjames.opts.builder.internal
 
-import net.bmjames.opts.types.{ParseError, OptName}
+import net.bmjames.opts.types.{ParserInfo, ParseError, OptName}
 
-case class OptionFields[A](names: List[OptName], noArgError: ParseError)
+final case class OptionFields[A](names: List[OptName], noArgError: ParseError)
 
 object OptionFields {
 
@@ -13,7 +13,7 @@ object OptionFields {
     }
 }
 
-case class FlagFields[A](names: List[OptName], active: A)
+final case class FlagFields[A](names: List[OptName], active: A)
 
 object FlagFields {
 
@@ -23,3 +23,5 @@ object FlagFields {
         fa.copy(names = n :: fa.names)
     }
 }
+
+final case class CommandFields[A](commands: List[(String, ParserInfo[A])])

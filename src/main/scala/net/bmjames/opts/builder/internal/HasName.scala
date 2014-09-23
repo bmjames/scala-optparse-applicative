@@ -8,3 +8,6 @@ trait HasName[F[_]] {
   def name[A](n: OptName, fa: F[A]): F[A]
 
 }
+
+trait HasMetavar[F[_]] {
+}
