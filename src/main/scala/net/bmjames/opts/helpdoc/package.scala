@@ -12,7 +12,7 @@ import scalaz.syntax.functor._
 import org.kiama.output.PrettyPrinter.Doc
 import org.kiama.output.{PrettyPrinter => PP}
 
-package object help {
+package object helpdoc {
 
   import Pretty._
   import Chunk._

@@ -1,4 +1,4 @@
-package net.bmjames.opts.help
+package net.bmjames.opts.helpdoc
 
 import scalaz.{Applicative, Monoid, MonadPlus}
 import scalaz.std.list._

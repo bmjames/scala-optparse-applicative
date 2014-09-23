@@ -1,4 +1,4 @@
-package net.bmjames.opts.help
+package net.bmjames.opts.helpdoc
 
 import Chunk._
 import scalaz.{Monoid, Show}

@@ -1,6 +1,6 @@
 package net.bmjames.opts.types
 
-import net.bmjames.opts.help.Chunk
+import net.bmjames.opts.helpdoc.Chunk
 import org.kiama.output.PrettyPrinter.Doc
 
 import scalaz.Functor

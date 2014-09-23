@@ -3,11 +3,14 @@ package net.bmjames.opts
 import net.bmjames.opts.internal.min
 import net.bmjames.opts.builder.internal._
 import net.bmjames.opts.types._
+import net.bmjames.opts.helpdoc.Chunk
 
 import scalaz.{\/, Show, EitherT, Applicative}
 import scalaz.syntax.semigroup._
 import scalaz.syntax.applicativePlus._
 import scalaz.std.option._
+
+import org.kiama.output.PrettyPrinter.Doc
 
 package object builder {
 
@@ -39,6 +42,14 @@ package object builder {
   /** Show the default value for this option using its Show instance. */
   def showDefault[F[_], A](implicit A: Show[A]): Mod[F, A] =
     showDefaultWith(a => A.show(a).toString)
+
+  /** Specify the help text for an option. */
+  def help[F[_], A](s: String): Mod[F, A] =
+    Mod.option(_.copy(help = Chunk.paragraph(s)))
+
+  /** Specify the help Doc. */
+  def helpDoc[F[_], A](doc: Option[Doc]): Mod[F, A] =
+    Mod.option(_.copy(help = Chunk(doc)))
 
   /** Convert a function in the Either monad to a reader. */
   def eitherReader[A](f: String => String \/ A): String => ReadM[A] =

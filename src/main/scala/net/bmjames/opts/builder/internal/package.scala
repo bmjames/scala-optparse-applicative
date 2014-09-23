@@ -1,7 +1,7 @@
 package net.bmjames.opts.builder
 
 import net.bmjames.opts.common.liftOpt
-import net.bmjames.opts.help.Chunk
+import net.bmjames.opts.helpdoc.Chunk
 import net.bmjames.opts.types._
 
 import scalaz.syntax.applicativePlus._

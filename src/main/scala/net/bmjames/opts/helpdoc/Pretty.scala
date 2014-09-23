@@ -1,4 +1,4 @@
-package net.bmjames.opts.help
+package net.bmjames.opts.helpdoc
 
 import org.kiama.output.PrettyPrinter.Doc
 import org.kiama.output.{PrettyPrinter => PP}

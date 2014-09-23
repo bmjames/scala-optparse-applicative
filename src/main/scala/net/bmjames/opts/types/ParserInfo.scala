@@ -1,6 +1,6 @@
 package net.bmjames.opts.types
 
-import net.bmjames.opts.help.Chunk
+import net.bmjames.opts.helpdoc.Chunk
 
 import scalaz.Functor
 import scalaz.syntax.functor._
