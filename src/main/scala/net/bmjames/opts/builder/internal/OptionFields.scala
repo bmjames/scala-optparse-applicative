@@ -25,3 +25,5 @@ object FlagFields {
 }
 
 final case class CommandFields[A](commands: List[(String, ParserInfo[A])])
+
+final case class ArgumentFields[A]()

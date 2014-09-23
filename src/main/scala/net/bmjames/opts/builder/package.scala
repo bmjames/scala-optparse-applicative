@@ -5,12 +5,15 @@ import net.bmjames.opts.builder.internal._
 import net.bmjames.opts.types._
 
 import scalaz.{\/, Show, EitherT, Applicative}
+import scalaz.syntax.semigroup._
 
 package object builder {
 
+  /** String Option reader. */
   def str[F[_]](s: String)(implicit F: Applicative[F]): F[String] =
     F.point(s)
 
+  /** Null Option reader. All arguments will fail validation. */
   def disabled[F[_], A](e: String)(implicit F: Applicative[F]): EitherT[F, String, A] =
     EitherT.left[F, String, A](F.point(e))
 
@@ -58,5 +61,16 @@ package object builder {
   /** Add a command to a subparser option. */
   def command[A](cmd: String, info: ParserInfo[A]): Mod[CommandFields, A] =
     Mod.field(p => p.copy(commands = (cmd, info) :: p.commands))
+
+  /** Builder for a command parser. The command modifier can be used to specify individual commands. */
+  def subparser[A](mod: Mod[CommandFields, A]): Parser[A] = {
+    val Mod(_, d, g) = metavar[CommandFields, A]("COMMAND") |+| mod
+    val reader = Function.tupled(CmdReader.apply[A] _)(mkCommand(mod))
+    mkParser(d, g, reader)
+  }
+
+  /** Builder for an argument parser. */
+  def argument[A](p: String => Option[A], mod: Mod[ArgumentFields, A]): Parser[A] =
+    mkParser(mod.prop, mod.g, ArgReader(CReader(p)))
 
 }

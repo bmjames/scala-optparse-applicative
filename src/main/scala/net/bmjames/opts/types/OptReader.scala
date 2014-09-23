@@ -1,10 +1,10 @@
 package net.bmjames.opts.types
 
-import scalaz.{Functor, ReaderT, MonadPlus, \/}
+import scalaz.{Functor, MonadPlus, \/}
 import scalaz.syntax.applicative._
 import scalaz.std.option._
 
-import OptReader._
+import CReader._
 
 sealed trait OptReader[A] {
 
@@ -25,10 +25,6 @@ case class ArgReader[A](cr: ArgCReader[A]) extends OptReader[A]
 case class CmdReader[A](ns: List[String], f: String => Option[ParserInfo[A]]) extends OptReader[A]
 
 object OptReader {
-
-  type CReader[F[_], A] = ReaderT[F, String, A]
-  type OptCReader[A] = CReader[ReadM, A]
-  type ArgCReader[A] = CReader[Option, A]
 
   implicit val optReaderFunctor: Functor[OptReader] =
     new Functor[OptReader] {

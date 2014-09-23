@@ -191,6 +191,9 @@ package object common {
       case _                          => false
     }
 
+  /** Create a parser composed of a single operation. */
+  def liftOpt[A](opt: Opt[A]): Parser[A] = OptP(opt)
+
   trait ArgsState[F[_]] {
     type G[A] = StateT[F, Args, A]
   }
