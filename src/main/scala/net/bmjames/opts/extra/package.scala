@@ -19,8 +19,8 @@ package object extra {
   def helper[A]: Parser[A => A] =
     abortOption(ShowHelpText, long[OptionFields, A => A]("help") <> short('h') <> help("Show this help text") <> hidden)
 
-  def execParser[A](args: List[String], progName: String, pinfo: ParserInfo[A]): A =
-    customExecParser(args, progName, prefs(idm[PrefsMod]), pinfo)
+  def execParser[A](args: Array[String], progName: String, pinfo: ParserInfo[A]): A =
+    customExecParser(args.toList, progName, prefs(idm[PrefsMod]), pinfo)
 
   def customExecParser[A](args: List[String], progName: String, pprefs: ParserPrefs, pinfo: ParserInfo[A]): A =
     handleParseResult(progName, execParserPure(pprefs, pinfo, args))

@@ -11,6 +11,9 @@ sealed trait Parser[A] {
 
   final def treeMap[B](g: OptHelpInfo => (Opt ~> ({type λ[α]=Const[B,α]})#λ)): OptTree[B] =
     treeMapParser[A, B](g, this)
+
+  /** Alias for <+> */
+  def <|>(that: Parser[A]): Parser[A] = this <+> that
 }
 
 case class NilP[A](fa: Option[A]) extends Parser[A]
@@ -41,7 +44,7 @@ object Parser {
       def ap[A, B](fa: => Parser[A])(f: => Parser[A => B]): Parser[B] =
         MultP(f, fa)
 
-      def point[A](a: => A): Parser[A] = NilP(Some(a))
+      def point[A](a: => A): Parser[A] = Parser.pure(a)
 
       def empty[A]: Parser[A] = NilP(None)
 
@@ -55,4 +58,8 @@ object Parser {
       override def some[A](a: Parser[A]): Parser[List[A]] =
         fromM(^(oneM(a), manyM(a))(_ :: _))
     }
+
+  def pure[A](a: A): Parser[A] =
+    NilP(Some(a))
+
 }

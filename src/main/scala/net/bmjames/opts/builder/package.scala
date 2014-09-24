@@ -8,7 +8,9 @@ import net.bmjames.opts.helpdoc.Chunk
 import scalaz._
 import scalaz.syntax.semigroup._
 import scalaz.syntax.applicativePlus._
+import scalaz.syntax.foldable._
 import scalaz.std.option._
+import scalaz.std.list._
 
 import org.kiama.output.PrettyPrinter.Doc
 
@@ -102,8 +104,8 @@ package object builder {
   }
 
   /** Builder for a boolean flag. */
-  def switch(mod: Mod[FlagFields, Boolean]): Parser[Boolean] =
-    flag(false, true, mod)
+  def switch(mod: Mod[FlagFields, Boolean]*): Parser[Boolean] =
+    flag(false, true, mod.toList.foldMap())
 
   /** An option that always fails. */
   def abortOption[A](err: ParseError, mod: Mod[OptionFields, A => A]): Parser[A => A] =
@@ -114,8 +116,8 @@ package object builder {
     abortOption(InfoMsg(s), mod)
 
   /** Builder for an option taking a String argument. */
-  def strOption(mod: Mod[OptionFields, String]): Parser[String] =
-    option(str[ReadM], mod)
+  def strOption(mod: Mod[OptionFields, String]*): Parser[String] =
+    option(str[ReadM], mod.toList.foldMap())
 
   def option[A](r: String => ReadM[A], mod: Mod[OptionFields, A]): Parser[A] = {
     val Mod(f, d, g) = metavar[OptionFields, A]("ARG") |+| mod
