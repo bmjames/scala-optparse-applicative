@@ -1,5 +1,7 @@
 package net.bmjames.opts.helpdoc
 
+import net.bmjames.opts.internal.words
+
 import scalaz.{Applicative, Monoid, MonadPlus}
 import scalaz.std.list._
 import scalaz.std.option._
@@ -82,9 +84,6 @@ object Chunk {
 
   def extractChunk[A : Monoid](chunk: Chunk[A]): A =
     chunk.run.orZero
-
-  def words(s: String): List[String] =
-    s.split("\\s+").toList
 
   def fromString(s: String): Chunk[Doc] =
     s match {

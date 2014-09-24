@@ -18,6 +18,9 @@ final case class ParserHelp(error:  Chunk[Doc],
 
 object ParserHelp {
 
+  val empty: ParserHelp =
+    ParserHelp(Chunk.empty, Chunk.empty, Chunk.empty, Chunk.empty, Chunk.empty)
+
   implicit val parserHelpShow: Show[ParserHelp] =
     new Show[ParserHelp] {
       override def shows(f: ParserHelp): String = renderHelp(80, f).shows
@@ -26,7 +29,7 @@ object ParserHelp {
   implicit val parserHelpMonoid: Monoid[ParserHelp] =
     new Monoid[ParserHelp] {
       override def zero: ParserHelp =
-        ParserHelp(Chunk.empty, Chunk.empty, Chunk.empty, Chunk.empty, Chunk.empty)
+        ParserHelp.empty
       override def append(f1: ParserHelp, f2: => ParserHelp): ParserHelp =
         ParserHelp(f1.error  |+| f2.error,
                    f1.header |+| f2.header,

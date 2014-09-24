@@ -1,6 +1,13 @@
 package net.bmjames.opts
 
+import net.bmjames.opts.types.{ParseError, ParserPrefs}
+
+import scalaz.\/
+
 package object internal {
+
+  def runP[A](p: P[A], pprefs: ParserPrefs): (Context, ParseError \/ A) =
+    p.run.run.run.run(pprefs)
 
   def uncons[A](xs: List[A]): Option[(A, List[A])] =
     xs match {
@@ -10,4 +17,11 @@ package object internal {
 
   def min[A](a1: A, a2: A)(implicit A: Ordering[A]): A =
     A.min(a1, a2)
+
+  def words(s: String): List[String] =
+    s.split("\\s+").toList
+
+  def unwords(xs: List[String]): String =
+    xs.mkString(" ")
+
 }
