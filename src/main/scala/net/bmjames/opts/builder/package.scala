@@ -133,6 +133,19 @@ package object builder {
 
   // TODO implement info mod builders
 
+  import Chunk.empty
+
+  def info[A](parser: Parser[A], mod: InfoMod[A]): ParserInfo[A] = {
+    val base = ParserInfo(parser = parser,
+                          fullDesc = true,
+                          progDesc = empty,
+                          header = empty,
+                          footer = empty,
+                          failureCode = 1,
+                          intersperse = true)
+    mod.run(base)
+  }
+
   type PrefsMod = Endo[ParserPrefs]
 
   def multiSuffix(suffix: String): PrefsMod =
@@ -150,8 +163,14 @@ package object builder {
   def columns(cols: Int): PrefsMod =
     Endo(_.copy(columns = cols))
 
-  def prefs(mod: PrefsMod): ParserPrefs =
-    mod(ParserPrefs(multiSuffix = "", disambiguate = false, showHelpOnError = false, backtrack = true, columns = 80))
+  def prefs(mod: PrefsMod): ParserPrefs = {
+    val base = ParserPrefs(multiSuffix = "",
+                           disambiguate = false,
+                           showHelpOnError = false,
+                           backtrack = true,
+                           columns = 80)
+    mod(base)
+  }
 
   /** Trivial option modifier. */
   def idm[M](implicit M: Monoid[M]): M =
