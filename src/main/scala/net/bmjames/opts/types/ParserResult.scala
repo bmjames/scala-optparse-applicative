@@ -10,7 +10,13 @@ case class Success[A](a: A) extends ParserResult[A]
 
 case class Failure[A](failure: ParserFailure[ParserHelp]) extends ParserResult[A]
 
-sealed trait ExitCode
+sealed trait ExitCode {
+  final def toInt: Int =
+    this match {
+      case ExitSuccess    => 0
+      case ExitFailure(i) => i
+    }
+}
 case object ExitSuccess extends ExitCode
 case class ExitFailure(code: Int) extends ExitCode
 

@@ -19,6 +19,24 @@ package object extra {
   def helper[A]: Parser[A => A] =
     abortOption(ShowHelpText, long[OptionFields, A => A]("help") <> short('h') <> help("Show this help text") <> hidden)
 
+  def execParser[A](args: List[String], progName: String, pinfo: ParserInfo[A]): A =
+    customExecParser(args, progName, prefs(idm[PrefsMod]), pinfo)
+
+  def customExecParser[A](args: List[String], progName: String, pprefs: ParserPrefs, pinfo: ParserInfo[A]): A =
+    handleParseResult(progName, execParserPure(pprefs, pinfo, args))
+
+  def handleParseResult[A](progName: String, result: ParserResult[A]): A =
+    result match {
+      case Success(a) => a
+      case Failure(f) =>
+        val (msg, exit) = renderFailure(f, progName)
+        exit match {
+          case ExitSuccess => println(msg)
+          case _           => Console.err.println(msg)
+        }
+        sys.exit(exit.toInt)
+    }
+
   def execParserPure[A](pprefs: ParserPrefs, pinfo: ParserInfo[A], args: List[String]): ParserResult[A] = {
     val p = runParserInfo[P, A](pinfo, args)
     runP(p, pprefs) match {
@@ -75,5 +93,10 @@ package object extra {
 
       (h, exitCode, pprefs.columns)
     }
+
+  def renderFailure(failure: ParserFailure[ParserHelp], progName: String): (String, ExitCode) = {
+    val (h, exit, cols) = failure.run(progName)
+    (ParserHelp.renderHelp(cols, h), exit)
+  }
 
 }

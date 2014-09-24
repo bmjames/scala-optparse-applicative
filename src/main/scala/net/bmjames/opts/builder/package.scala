@@ -5,7 +5,7 @@ import net.bmjames.opts.builder.internal._
 import net.bmjames.opts.types._
 import net.bmjames.opts.helpdoc.Chunk
 
-import scalaz.{\/, Show, EitherT, Applicative}
+import scalaz._
 import scalaz.syntax.semigroup._
 import scalaz.syntax.applicativePlus._
 import scalaz.std.option._
@@ -124,5 +124,37 @@ package object builder {
     val reader = OptionReader(fields.names, cReader, fields.noArgError)
     mkParser(d, g, reader)
   }
+
+  type InfoMod[A] = Endo[ParserInfo[A]]
+
+  /** Specify a short program description. */
+  def progDesc[A](desc: String): InfoMod[A] =
+    Endo(_.copy(progDesc = Chunk.paragraph(desc)))
+
+  // TODO implement info mod builders
+
+  type PrefsMod = Endo[ParserPrefs]
+
+  def multiSuffix(suffix: String): PrefsMod =
+    Endo(_.copy(multiSuffix = suffix))
+
+  val disambiguate: PrefsMod =
+    Endo(_.copy(disambiguate = true))
+
+  val showHelpOnError: PrefsMod =
+    Endo(_.copy(showHelpOnError = true))
+
+  val noBacktrack: PrefsMod =
+    Endo(_.copy(backtrack = false))
+
+  def columns(cols: Int): PrefsMod =
+    Endo(_.copy(columns = cols))
+
+  def prefs(mod: PrefsMod): ParserPrefs =
+    mod(ParserPrefs(multiSuffix = "", disambiguate = false, showHelpOnError = false, backtrack = true, columns = 80))
+
+  /** Trivial option modifier. */
+  def idm[M](implicit M: Monoid[M]): M =
+    M.zero
 
 }
