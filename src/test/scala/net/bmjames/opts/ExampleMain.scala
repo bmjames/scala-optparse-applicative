@@ -11,11 +11,12 @@ import Parser._
 
 object ExampleMain {
 
-  case class Opts(verbose: Boolean, inputs: List[File], output: Option[File])
+  case class Opts(verbose: Boolean, name: String, inputs: List[File], output: Option[File])
 
   val parseOpts: Parser[Opts] =
-    ^^(
+    ^^^(
       switch(short('v'), long("verbose")),
+      strOption(short('n'), long("name")) <|> pure("<default name>"),
       some(strArgument(metavar("FILE"), help("Files to read")).map(new File(_))),
       optional(strOption(short('f'), long("file"), metavar("FILE")).map(new File(_)))
     )(Opts.apply)
