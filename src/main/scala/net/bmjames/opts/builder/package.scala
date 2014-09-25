@@ -137,11 +137,14 @@ package object builder {
   def progDesc[A](desc: String): InfoMod[A] =
     Endo(_.copy(progDesc = Chunk.paragraph(desc)))
 
+  def header[A](header: String): InfoMod[A] =
+    Endo(_.copy(header = Chunk.paragraph(header)))
+
   // TODO implement info mod builders
 
   import Chunk.empty
 
-  def info[A](parser: Parser[A], mod: InfoMod[A]): ParserInfo[A] = {
+  def info[A](parser: Parser[A], mod: InfoMod[A]*): ParserInfo[A] = {
     val base = ParserInfo(parser = parser,
                           fullDesc = true,
                           progDesc = empty,
@@ -149,7 +152,7 @@ package object builder {
                           footer = empty,
                           failureCode = 1,
                           intersperse = true)
-    mod.run(base)
+    mod.toList.suml.run(base)
   }
 
   type PrefsMod = Endo[ParserPrefs]
@@ -169,13 +172,13 @@ package object builder {
   def columns(cols: Int): PrefsMod =
     Endo(_.copy(columns = cols))
 
-  def prefs(mod: PrefsMod): ParserPrefs = {
+  def prefs(mod: PrefsMod*): ParserPrefs = {
     val base = ParserPrefs(multiSuffix = "",
                            disambiguate = false,
                            showHelpOnError = false,
                            backtrack = true,
                            columns = 80)
-    mod(base)
+    mod.toList.suml.run(base)
   }
 
   /** Trivial option modifier. */
