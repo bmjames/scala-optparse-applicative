@@ -152,8 +152,6 @@ package object builder {
   def headerDoc[A](doc: Option[Doc]): InfoMod[A] =
     Endo(_.copy(header = Chunk(doc)))
 
-  // TODO implement info mod builders
-
   import Chunk.empty
 
   def info[A](parser: Parser[A], mod: InfoMod[A]*): ParserInfo[A] = {
