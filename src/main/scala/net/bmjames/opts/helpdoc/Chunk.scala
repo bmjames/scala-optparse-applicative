@@ -98,7 +98,7 @@ object Chunk {
     table match {
       case Nil => Chunk.empty
       case xs  => Applicative[Chunk].pure(PP.vcat(
-        for ((k, v) <- table) yield PP.indent(PP.padtobreak(size, k <+> v), 2)
+        for ((k, v) <- table) yield PP.indent(PP.padtobreak(size, k) <+> v, 2)
       ))
     }
 }
