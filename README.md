@@ -7,8 +7,10 @@ Most functionality has been ported, except completion.
 
 This library depends on [Scalaz] [2] for type classes and combinators, and [Kiama] [3] for pretty-printing.
 
-Simple usage example
---------------------
+Simple example
+--------------
+
+This example follows the one from the [optparse-applicative] [1] docs.
 
     case class Sample(hello: String, quiet: Boolean)
 
@@ -33,6 +35,20 @@ Simple usage example
       }
 
     }
+
+When run with the `--help` option, it prints:
+
+    hello - a test for optparse-applicative
+    
+    Usage: SampleMain --hello TARGET [--quiet]
+      Print a greeting for TARGET
+    
+    Available options:
+      -h,--help                Show this help text
+      --hello TARGET           Target for the greeting
+      --quiet                  Whether to be quiet
+
+Further examples can be found in `src/test`.
 
 [1]: https://hackage.haskell.org/package/optparse-applicative
 [2]: https://github.com/scalaz/scalaz
