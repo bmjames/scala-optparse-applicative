@@ -30,7 +30,7 @@ This example follows the one from the [optparse-applicative] [1] docs.
       def main(args: Array[String]) {
         val opts = info(sample <*> helper,
           progDesc("Print a greeting for TARGET"),
-          header("hello - a test for optparse-applicative"))
+          header("hello - a test for scala-optparse-applicative"))
         greet(execParser(args, "SampleMain", opts))
       }
 
@@ -38,7 +38,7 @@ This example follows the one from the [optparse-applicative] [1] docs.
 
 When run with the `--help` option, it prints:
 
-    hello - a test for optparse-applicative
+    hello - a test for scala-optparse-applicative
     
     Usage: SampleMain --hello TARGET [--quiet]
       Print a greeting for TARGET
