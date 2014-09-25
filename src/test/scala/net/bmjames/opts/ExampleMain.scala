@@ -7,16 +7,17 @@ import scalaz.syntax.applicativePlus._
 import builder._
 import extra._
 import types.Parser
-import Parser.pure
+import Parser._
 
 object ExampleMain {
 
-  case class Opts(verbose: Boolean, input: File)
+  case class Opts(verbose: Boolean, inputs: List[File], output: Option[File])
 
   val parseOpts: Parser[Opts] =
-    ^(
-      switch    (short('v'), long("verbose")),
-      strOption (short('f'), long("file"), metavar("FILE")).map(new File(_)) <|> pure(new File("/tmp/default"))
+    ^^(
+      switch(short('v'), long("verbose")),
+      some(strArgument(metavar("FILE"), help("Files to read")).map(new File(_))),
+      optional(strOption(short('f'), long("file"), metavar("FILE")).map(new File(_)))
     )(Opts.apply)
 
   def main(args: Array[String]) {
