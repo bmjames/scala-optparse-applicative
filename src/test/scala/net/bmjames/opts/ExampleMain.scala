@@ -9,26 +9,20 @@ import extra._
 import types.Parser
 import Parser._
 
-case class Sample(hello: String, quiet: Boolean)
+object ExampleMain {
 
-object SampleMain {
+  case class Opts(verbose: Boolean, inputs: List[File], output: Option[File])
 
-  val sample: Parser[Sample] =
-    ^(
-      strOption(long("hello"), metavar("TARGET"), help("Target for the greeting")),
-      switch(long("quiet"), help("Whether to be quiet"))
-    )(Sample.apply)
-
-  def greet(s: Sample): Unit = s match {
-    case Sample(h, false) => println("Hello, " ++ h)
-    case _ =>
-  }
+  val parseOpts: Parser[Opts] =
+    ^^(
+      switch(short('v'), long("verbose")),
+      some(strArgument(metavar("FILE"), help("Files to read")).map(new File(_))),
+      optional(strOption(short('f'), long("file"), metavar("FILE")).map(new File(_)))
+    )(Opts.apply)
 
   def main(args: Array[String]) {
-    val opts = info(sample <*> helper,
-      progDesc("Print a greeting for TARGET"),
-      header("hello - a test for optparse-applicative"))
-    greet(execParser(args, "SampleMain", opts))
+    val opts = execParser(args, "ExampleMain", info(parseOpts <*> helper, progDesc("An example program.")))
+    println(opts)
   }
 
 }
