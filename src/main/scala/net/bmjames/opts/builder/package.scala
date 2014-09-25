@@ -78,49 +78,53 @@ package object builder {
     Mod.field(p => p.copy(commands = (cmd, info) :: p.commands))
 
   /** Builder for a command parser. The command modifier can be used to specify individual commands. */
-  def subparser[A](mod: Mod[CommandFields, A]): Parser[A] = {
-    val Mod(_, d, g) = metavar[CommandFields, A]("COMMAND") |+| mod
-    val reader = Function.tupled(CmdReader.apply[A] _)(mkCommand(mod))
+  def subparser[A](mod: Mod[CommandFields, A]*): Parser[A] = {
+    val m = mod.toList.suml
+    val Mod(_, d, g) = metavar[CommandFields, A]("COMMAND") |+| m
+    val reader = Function.tupled(CmdReader.apply[A] _)(mkCommand(m))
     mkParser(d, g, reader)
   }
 
   /** Builder for an argument parser. */
-  def argument[A](p: String => Option[A], mod: Mod[ArgumentFields, A]): Parser[A] =
-    mkParser(mod.prop, mod.g, ArgReader(CReader(p)))
+  def argument[A](p: String => Option[A], mod: Mod[ArgumentFields, A]*): Parser[A] = {
+    val m = mod.toList.suml
+    mkParser(m.prop, m.g, ArgReader(CReader(p)))
+  }
 
   /** Builder for a String argument */
-  def strArgument(mod: Mod[ArgumentFields, String]): Parser[String] =
-    argument(str[Option], mod)
+  def strArgument(mod: Mod[ArgumentFields, String]*): Parser[String] =
+    argument(str[Option], mod.toList.suml)
 
   /** Builder for a flag parser. */
-  def flag[A](defV: A, actV: A, mod: Mod[FlagFields, A]): Parser[A] =
-    flag_(actV, mod) <+> defV.pure[Parser]
+  def flag[A](defV: A, actV: A, mod: Mod[FlagFields, A]*): Parser[A] =
+    flag_(actV, mod.toList.suml) <+> defV.pure[Parser]
 
   /** Builder for a flag parser without a default value. */
-  def flag_[A](actV: A, mod: Mod[FlagFields, A]): Parser[A] ={
-    val fields = mod.f(FlagFields(Nil, actV))
+  def flag_[A](actV: A, mod: Mod[FlagFields, A]*): Parser[A] = {
+    val m = mod.toList.suml
+    val fields = m.f(FlagFields(Nil, actV))
     val reader = FlagReader(fields.names, fields.active)
-    mkParser(mod.prop, mod.g, reader)
+    mkParser(m.prop, m.g, reader)
   }
 
   /** Builder for a boolean flag. */
   def switch(mod: Mod[FlagFields, Boolean]*): Parser[Boolean] =
-    flag(false, true, mod.toList.foldMap())
+    flag(false, true, mod.toList.suml)
 
   /** An option that always fails. */
-  def abortOption[A](err: ParseError, mod: Mod[OptionFields, A => A]): Parser[A => A] =
-    option(_ => ReadM.abort(err), noArgError[A => A](err) |+| value(identity) |+| metavar("") |+| mod)
+  def abortOption[A](err: ParseError, mod: Mod[OptionFields, A => A]*): Parser[A => A] =
+    option(_ => ReadM.abort(err), noArgError[A => A](err) |+| value(identity) |+| metavar("") |+| mod.toList.suml)
 
   /** An option that always fails and displays a message. */
-  def infoOption[A](s: String, mod: Mod[OptionFields, A => A]): Parser[A => A] =
-    abortOption(InfoMsg(s), mod)
+  def infoOption[A](s: String, mod: Mod[OptionFields, A => A]*): Parser[A => A] =
+    abortOption(InfoMsg(s), mod.toList.suml)
 
   /** Builder for an option taking a String argument. */
   def strOption(mod: Mod[OptionFields, String]*): Parser[String] =
-    option(str[ReadM], mod.toList.foldMap())
+    option(str[ReadM], mod.toList.suml)
 
-  def option[A](r: String => ReadM[A], mod: Mod[OptionFields, A]): Parser[A] = {
-    val Mod(f, d, g) = metavar[OptionFields, A]("ARG") |+| mod
+  def option[A](r: String => ReadM[A], mod: Mod[OptionFields, A]*): Parser[A] = {
+    val Mod(f, d, g) = metavar[OptionFields, A]("ARG") |+| mod.toList.suml
     val fields = f(OptionFields(Nil, ErrorMsg("")))
     val cReader = CReader(r)
     val reader = OptionReader(fields.names, cReader, fields.noArgError)
