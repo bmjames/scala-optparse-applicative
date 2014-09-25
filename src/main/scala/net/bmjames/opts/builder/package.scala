@@ -137,8 +137,20 @@ package object builder {
   def progDesc[A](desc: String): InfoMod[A] =
     Endo(_.copy(progDesc = Chunk.paragraph(desc)))
 
+  def progDescDoc[A](doc: Option[Doc]): InfoMod[A] =
+    Endo(_.copy(progDesc = Chunk(doc)))
+
+  def failureCode[A](code: Int): InfoMod[A] =
+    Endo(_.copy(failureCode = code))
+
+  def noIntersperse[A]: InfoMod[A] =
+    Endo(_.copy(intersperse = false))
+
   def header[A](header: String): InfoMod[A] =
     Endo(_.copy(header = Chunk.paragraph(header)))
+
+  def headerDoc[A](doc: Option[Doc]): InfoMod[A] =
+    Endo(_.copy(header = Chunk(doc)))
 
   // TODO implement info mod builders
 
