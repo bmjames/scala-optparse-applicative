@@ -82,10 +82,10 @@ package object extra {
       }
 
       def baseHelp[A](i: ParserInfo[A]): ParserHelp =
-        if (showFullHelp) h |+| footerHelp(i.header) |+| parserHelp(pprefs, i.parser)
+        if (showFullHelp) headerHelp(i.header) |+| footerHelp(i.footer) |+| parserHelp(pprefs, i.parser)
         else ParserHelp.empty
 
-      def h = withContext[A, ParserHelp](ctx, pinfo, names => new (ParserInfo ~> (({type λ[α]=Const[ParserHelp,α]})#λ)) {
+      val h = withContext[A, ParserHelp](ctx, pinfo, names => new (ParserInfo ~> (({type λ[α]=Const[ParserHelp,α]})#λ)) {
         def apply[A](fa: ParserInfo[A]): Const[ParserHelp, A] = Const {
           baseHelp(fa) |+| usage_help(progName, names, fa) |+| errorHelp
         }
