@@ -16,11 +16,11 @@ sealed trait OptReader[A] {
     }
 }
 
-case class OptionReader[A](ns: List[OptName], cr: OptCReader[A], e: ParseError) extends OptReader[A]
+case class OptionReader[A](ns: List[OptName], cr: CReader[A], e: ParseError) extends OptReader[A]
 
 case class FlagReader[A](ns: List[OptName], a: A) extends OptReader[A]
 
-case class ArgReader[A](cr: ArgCReader[A]) extends OptReader[A]
+case class ArgReader[A](cr: CReader[A]) extends OptReader[A]
 
 case class CmdReader[A](ns: List[String], f: String => Option[ParserInfo[A]]) extends OptReader[A]
 
@@ -37,34 +37,6 @@ object OptReader {
         }
     }
 
-}
-
-/** A newtype over the Either monad used by option readers.
-  */
-final case class ReadM[A](run: ParseError \/ A)
-
-object ReadM {
-
-  /** Abort option reader by exiting with a ParseError. */
-  def abort[A](e: ParseError): ReadM[A] =
-    ReadM(\/.left(e))
-
-  /** Abort option reader by exiting with an error message. */
-  def readerError[A](e: String): ReadM[A] =
-    abort(ErrorMsg(e))
-
-  implicit val readMMonadPlus: MonadPlus[ReadM] =
-    new MonadPlus[ReadM] {
-      def bind[A, B](fa: ReadM[A])(f: A => ReadM[B]): ReadM[B] =
-        ReadM(fa.run.flatMap(a => f(a).run))
-
-      def point[A](a: => A): ReadM[A] = ReadM(\/.right(a))
-
-      def empty[A]: ReadM[A] = ReadM(\/.left(UnknownError))
-
-      def plus[A](a: ReadM[A], b: => ReadM[A]): ReadM[A] =
-        a.run.fold(_ => b, a => a.point[ReadM])
-    }
 }
 
 sealed trait OptName

@@ -1,6 +1,6 @@
 package net.bmjames.opts
 
-import net.bmjames.opts.types.{ParseError, ParserPrefs}
+import net.bmjames.opts.types.{ReadM, ParseError, ParserPrefs}
 
 import scalaz.\/
 
@@ -23,5 +23,8 @@ package object internal {
 
   def unwords(xs: List[String]): String =
     xs.mkString(" ")
+
+  def runReadM[F[_], A](reader: ReadM[A], s: String)(implicit F: MonadP[F]): F[A] =
+    P.hoistEither(reader.run.run(s))
 
 }

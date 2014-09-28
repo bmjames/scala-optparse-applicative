@@ -1,14 +1,17 @@
 package net.bmjames.opts.types
 
-import scalaz.{Kleisli, ReaderT}
+import scalaz.Functor
+import scalaz.syntax.functor._
+
+// As we don't have the completion functionality, this is serving as a useless wrapper
+final case class CReader[A](reader: ReadM[A])
 
 object CReader {
 
-  type CReader[F[_], A] = ReaderT[F, String, A]
-  type OptCReader[A] = CReader[ReadM, A]
-  type ArgCReader[A] = CReader[Option, A]
-
-  def apply[F[_], A](f: String => F[A]): CReader[F, A] =
-    Kleisli.kleisli[F, String, A](f)
+  implicit val cReaderFunctor: Functor[CReader] =
+    new Functor[CReader] {
+      def map[A, B](fa: CReader[A])(f: A => B): CReader[B] =
+        CReader(fa.reader.map(f))
+    }
 
 }

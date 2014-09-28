@@ -1,12 +1,11 @@
 package net.bmjames.opts
 
-import net.bmjames.opts.internal.{P, NondetT, uncons, MonadP}
+import net.bmjames.opts.internal._
 import net.bmjames.opts.types._
 
 import scalaz._
 import scalaz.std.option._
 import scalaz.syntax.monadPlus._
-
 
 package object common {
 
@@ -19,7 +18,7 @@ package object common {
   def argMatches[F[_], A](opt: OptReader[A], arg: String)(implicit F: MonadP[F]): Option[StateT[F, Args, A]] =
     opt match {
       case ArgReader(rdr) =>
-        rdr.run(arg).map(_.point[({type λ[α]=StateT[F,Args,α]})#λ])
+        Some(runReadM(rdr.reader, arg).liftM[({type λ[ζ[_],α]=StateT[ζ,Args,α]})#λ])
       case CmdReader(_, f) =>
         f(arg).map { subp =>
           StateT[F, Args, A] { args =>
@@ -58,7 +57,7 @@ package object common {
           as <- mbArgs.fold(missingArg)(_.point[({type λ[α]=StateT[F,Args,α]})#λ])
           (arg1, args1) = as
           _ <- state.put(args1)
-          run <- rdr.run(arg1).run.fold(
+          run <- rdr.reader.run.run(arg1).fold(
             e => errorFor(word.name, e).liftM[({type λ[ζ[_],α]=StateT[ζ,Args,α]})#λ],
             r => r.point[({type λ[α]=StateT[F,Args,α]})#λ])
         } yield run

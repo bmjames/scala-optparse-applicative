@@ -7,7 +7,7 @@ import net.bmjames.opts.helpdoc.Chunk
 
 import scalaz._
 import scalaz.syntax.semigroup._
-import scalaz.syntax.applicativePlus._
+import scalaz.syntax.monadPlus._
 import scalaz.syntax.foldable._
 import scalaz.std.option._
 import scalaz.std.list._
@@ -17,12 +17,17 @@ import org.kiama.output.PrettyPrinter.Doc
 package object builder {
 
   /** String Option reader. */
-  def str[F[_]](s: String)(implicit F: Applicative[F]): F[String] =
-    F.point(s)
+  val str: ReadM[String] =
+    ReadM.ask
+
+  def fromTryCatch[A](f: String => A): ReadM[A] =
+    ReadM.mkReadM { arg =>
+      \/.fromTryCatchNonFatal(f(arg)).leftMap(_ => ErrorMsg(s"cannot parse value `$arg'"))
+    }
 
   /** Null Option reader. All arguments will fail validation. */
-  def disabled[F[_], A](e: String)(implicit F: Applicative[F]): EitherT[F, String, A] =
-    EitherT.left[F, String, A](F.point(e))
+  def disabled[A]: ReadM[A] =
+    ReadM.error("disabled option")
 
 
   /** Specify a short name for an option. */
@@ -54,8 +59,8 @@ package object builder {
     Mod.option(_.copy(help = Chunk(doc)))
 
   /** Convert a function in the Either monad to a reader. */
-  def eitherReader[A](f: String => String \/ A): String => ReadM[A] =
-    s => f(s).fold(ReadM.readerError, a => Applicative[ReadM].point(a))
+  def eitherReader[A](f: String => String \/ A): ReadM[A] =
+    ReadM.ask.flatMap(arg => f(arg).fold(ReadM.error, _.point[ReadM]))
 
   /** Specify the error to display when no argument is provided to this option. */
   def noArgError[A](e: ParseError): Mod[OptionFields, A] =
@@ -86,14 +91,14 @@ package object builder {
   }
 
   /** Builder for an argument parser. */
-  def argument[A](p: String => Option[A], mod: Mod[ArgumentFields, A]*): Parser[A] = {
+  def argument[A](p: ReadM[A], mod: Mod[ArgumentFields, A]*): Parser[A] = {
     val m = mod.toList.suml
     mkParser(m.prop, m.g, ArgReader(CReader(p)))
   }
 
   /** Builder for a String argument */
   def strArgument(mod: Mod[ArgumentFields, String]*): Parser[String] =
-    argument(str[Option], mod.toList.suml)
+    argument(str, mod.toList.suml)
 
   /** Builder for a flag parser. */
   def flag[A](defV: A, actV: A, mod: Mod[FlagFields, A]*): Parser[A] =
@@ -113,7 +118,7 @@ package object builder {
 
   /** An option that always fails. */
   def abortOption[A](err: ParseError, mod: Mod[OptionFields, A => A]*): Parser[A => A] =
-    option(_ => ReadM.abort(err), noArgError[A => A](err) |+| value(identity) |+| metavar("") |+| mod.toList.suml)
+    option(ReadM.abort(err), noArgError[A => A](err) |+| value(identity) |+| metavar("") |+| mod.toList.suml)
 
   /** An option that always fails and displays a message. */
   def infoOption[A](s: String, mod: Mod[OptionFields, A => A]*): Parser[A => A] =
@@ -121,9 +126,13 @@ package object builder {
 
   /** Builder for an option taking a String argument. */
   def strOption(mod: Mod[OptionFields, String]*): Parser[String] =
-    option(str[ReadM], mod.toList.suml)
+    option(str, mod.toList.suml)
 
-  def option[A](r: String => ReadM[A], mod: Mod[OptionFields, A]*): Parser[A] = {
+  /** Builder for an option taking an integer argument. */
+  def intOption(mod: Mod[OptionFields, Int]*): Parser[Int] =
+    option(fromTryCatch(_.toInt), mod.toList.suml)
+
+  def option[A](r: ReadM[A], mod: Mod[OptionFields, A]*): Parser[A] = {
     val Mod(f, d, g) = metavar[OptionFields, A]("ARG") |+| mod.toList.suml
     val fields = f(OptionFields(Nil, ErrorMsg("")))
     val cReader = CReader(r)
