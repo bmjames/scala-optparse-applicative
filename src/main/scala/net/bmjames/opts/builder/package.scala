@@ -16,10 +16,18 @@ import org.kiama.output.PrettyPrinter.Doc
 
 package object builder {
 
-  /** String Option reader. */
+  // Since Scalaz has no Read type class, there is no 'auto' function here.
+  // Instead, I've implemented fromTryCatch, so you can use Scala's unsafe conversions such as 'toInt'
+
+  /** String reader. */
   val str: ReadM[String] =
     ReadM.ask
 
+  /** Int reader. */
+  val int: ReadM[Int] =
+    fromTryCatch(_.toInt)
+
+  /** Turns an unsafe conversion function into a reader by catching non-fatal exceptions. */
   def fromTryCatch[A](f: String => A): ReadM[A] =
     ReadM.mkReadM { arg =>
       \/.fromTryCatchNonFatal(f(arg)).leftMap(_ => ErrorMsg(s"cannot parse value `$arg'"))
@@ -96,9 +104,12 @@ package object builder {
     mkParser(m.prop, m.g, ArgReader(CReader(p)))
   }
 
-  /** Builder for a String argument */
+  /** Builder for a String argument. */
   def strArgument(mod: Mod[ArgumentFields, String]*): Parser[String] =
     argument(str, mod.toList.suml)
+
+  def intArgument(mod: Mod[ArgumentFields, Int]*): Parser[Int] =
+    argument(int, mod.toList.suml)
 
   /** Builder for a flag parser. */
   def flag[A](defV: A, actV: A, mod: Mod[FlagFields, A]*): Parser[A] =
@@ -130,7 +141,7 @@ package object builder {
 
   /** Builder for an option taking an integer argument. */
   def intOption(mod: Mod[OptionFields, Int]*): Parser[Int] =
-    option(fromTryCatch(_.toInt), mod.toList.suml)
+    option(int, mod.toList.suml)
 
   def option[A](r: ReadM[A], mod: Mod[OptionFields, A]*): Parser[A] = {
     val Mod(f, d, g) = metavar[OptionFields, A]("ARG") |+| mod.toList.suml
