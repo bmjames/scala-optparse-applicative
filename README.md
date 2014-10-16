@@ -50,6 +50,15 @@ When run with the `--help` option, it prints:
 
 Further examples can be found in `src/test`.
 
+To Do
+-----
+
+Before a 0.1 release:
+
+  * More tests
+  * Enable everything to be imported from one
+    package (as `import Options.Applicative` would do)
+
 [1]: https://hackage.haskell.org/package/optparse-applicative
 [2]: https://github.com/scalaz/scalaz
 [3]: https://code.google.com/p/kiama/
