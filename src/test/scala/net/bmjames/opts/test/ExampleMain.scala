@@ -1,13 +1,8 @@
-package net.bmjames.opts
+package net.bmjames.opts.test
 
 import java.io.File
-
 import scalaz.syntax.applicativePlus._
-
-import builder._
-import extra._
-import types.Parser
-import Parser._
+import net.bmjames.opts._
 
 object ExampleMain {
 

@@ -38,7 +38,9 @@ case class BindP[A, B](p: Parser[A], f: A => Parser[B]) extends Parser[B] {
   type X = A
 }
 
-object Parser {
+object Parser extends ParserInstances with ParserFunctions
+
+private[opts] trait ParserInstances {
 
   implicit val parserApplicativePlus: ApplicativePlus[Parser] =
     new ApplicativePlus[Parser] {
@@ -58,6 +60,9 @@ object Parser {
 
       override def some[A](a: Parser[A]): Parser[List[A]] = Parser.some(a)
     }
+}
+
+private[opts] trait ParserFunctions {
 
   def pure[A](a: A): Parser[A] =
     NilP(Some(a))
