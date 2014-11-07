@@ -7,6 +7,15 @@ Most functionality has been ported, except completion.
 
 This library depends on [Scalaz] [2] for functional data structures, type classes and combinators, and [Kiama] [3] for pretty-printing.
 
+How to get it
+-------------
+
+Version 0.1 of scala-optparse-applicative is available for Scala 2.10 and 2.11.
+
+    resolvers += "bmjames Bintray Repo" at "https://dl.bintray.com/bmjames/maven"
+
+    libraryDependencies += "net.bmjames" %% "scala-optparse-applicative" % "0.1"
+
 Simple example
 --------------
 
@@ -53,11 +62,7 @@ Further examples can be found in `src/test`.
 To Do
 -----
 
-Before a 0.1 release:
-
-  * [ ] More tests
-  * [x] Enable everything to be imported from one
-        package (as `import Options.Applicative` would do)
+  * More tests
 
 [1]: https://hackage.haskell.org/package/optparse-applicative
 [2]: https://github.com/scalaz/scalaz
