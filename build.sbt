@@ -16,6 +16,7 @@ scalacOptions ++= List(
   "-language:existentials",
   "-language:higherKinds")
 
-libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.1.0"
-
-libraryDependencies += "com.googlecode.kiama" %% "kiama" % "1.7.0"
+libraryDependencies ++= List(
+  "org.scalaz" %% "scalaz-core" % "7.1.0",
+  "com.googlecode.kiama" %% "kiama" % "1.7.0",
+  "org.scalacheck" %% "scalacheck" % "1.11.6" % "test")

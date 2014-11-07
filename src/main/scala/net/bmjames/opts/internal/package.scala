@@ -19,7 +19,7 @@ package object internal {
     A.min(a1, a2)
 
   def words(s: String): List[String] =
-    s.split("\\s+").toList
+    s.split("\\s+").toList.filter(_.nonEmpty)
 
   def unwords(xs: List[String]): String =
     xs.mkString(" ")

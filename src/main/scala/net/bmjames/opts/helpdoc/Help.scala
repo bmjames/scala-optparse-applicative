@@ -45,7 +45,7 @@ private[opts] trait Help {
           case CmdReader(cmds, p) =>
             Chunk.tabulate(
               for (cmd <- cmds.reverse; d <- p(cmd).map(_.progDesc).toList)
-              yield (PP.string(cmd), PP.align(extractChunk(d)))
+              yield (PP.string(cmd), PP.align(extract(d)))
             )
           case _ => Chunk.empty
         })
@@ -83,7 +83,7 @@ private[opts] trait Help {
         val n = optDesc(pprefs, style, info, fa)
         val h = fa.props.help
         val hdef = Chunk(fa.props.showDefault.map(s => PP.parens(PP.string("default:") <+> PP.string(s))))
-        (n.isEmpty || n.isEmpty).prevent[Option]((extractChunk(n), PP.align(extractChunk(h <<+>> hdef))))
+        (n.isEmpty || n.isEmpty).prevent[Option]((extract(n), PP.align(extract(h <<+>> hdef))))
       }
     }).flatten)
   }
@@ -114,6 +114,6 @@ private[opts] trait Help {
 
   /** Generate option summary. */
   def parserUsage[A](pprefs: ParserPrefs, parser: Parser[A], progName: String): Doc =
-    PP.hsep(List("Usage:", progName, PP.align(extractChunk(briefDesc(pprefs, parser)))))
+    PP.hsep(List("Usage:", progName, PP.align(extract(briefDesc(pprefs, parser)))))
 
 }

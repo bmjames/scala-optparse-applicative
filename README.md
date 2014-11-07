@@ -5,7 +5,7 @@ A port of the [optparse-applicative] [1] library to the Scala programming langua
 
 Most functionality has been ported, except completion.
 
-This library depends on [Scalaz] [2] for type classes and combinators, and [Kiama] [3] for pretty-printing.
+This library depends on [Scalaz] [2] for functional data structures, type classes and combinators, and [Kiama] [3] for pretty-printing.
 
 Simple example
 --------------

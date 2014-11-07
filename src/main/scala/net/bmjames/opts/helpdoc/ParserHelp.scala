@@ -39,7 +39,7 @@ object ParserHelp {
     }
 
   def helpText(help: ParserHelp): Doc =
-    extractChunk(vsepChunks(List(help.error, help.header, help.usage, help.body, help.footer)))
+    extract(vsepChunks(List(help.error, help.header, help.usage, help.body, help.footer)))
 
   /** Convert a help text to a String */
   def renderHelp(cols: Int, help: ParserHelp): String =

@@ -82,7 +82,7 @@ object Chunk {
   def vsepChunks(chunks: List[Chunk[Doc]]): Chunk[Doc] =
     chunks.foldRight(Chunk.empty[Doc])(chunked((x, y) => x <@> PP.empty <@> y))
 
-  def extractChunk[A : Monoid](chunk: Chunk[A]): A =
+  def extract[A : Monoid](chunk: Chunk[A]): A =
     chunk.run.orZero
 
   def fromString(s: String): Chunk[Doc] =
