@@ -8,5 +8,6 @@ package object opts
   with types.ParserFunctions {
 
   type Parser[A] = types.Parser[A]
+  type ParserInfo[A] = types.ParserInfo[A]
 
 }

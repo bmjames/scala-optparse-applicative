@@ -1,7 +1,8 @@
-package net.bmjames.opts.test
+package net.bmjames.opts.test.example
+
+import net.bmjames.opts._
 
 import scalaz.syntax.apply._
-import net.bmjames.opts._
 
 case class Options(globalOpt: String, globalFlag: Boolean, command: Command)
 

@@ -1,8 +1,10 @@
-package net.bmjames.opts.test
+package net.bmjames.opts.test.example
 
 import java.io.File
-import scalaz.syntax.applicativePlus._
+
 import net.bmjames.opts._
+
+import scalaz.syntax.applicativePlus._
 
 object ExampleMain {
 
