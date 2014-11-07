@@ -31,11 +31,6 @@ object P {
   type ParserPrefsReader[A] = Reader[ParserPrefs, A]
   type ContextWriter[A] = WriterT[ParserPrefsReader, Context, A]
 
-  def generalize[F[_] : Applicative]: Id ~> F =
-    new (Id ~> F) {
-      def apply[A](fa: Id[A]): F[A] = fa.point[F]
-    }
-
   def tell[F[_]: Applicative, W](w: W): WriterT[F, W, Unit] =
     writerT((w, ()).point[F])
 
