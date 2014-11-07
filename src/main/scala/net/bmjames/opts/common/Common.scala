@@ -74,8 +74,6 @@ private[opts] trait Common {
       case _            => false
     }
 
-  final case class OptWord(name: OptName, value: Option[String])
-
   def parseWord(s: String): Option[OptWord] =
     if (s.startsWith("--")) {
       val w = s.drop(2)

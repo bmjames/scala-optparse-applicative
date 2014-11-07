@@ -17,9 +17,6 @@ private[opts] trait Help {
   import Pretty._
   import Chunk._
 
-  /** Style for rendering an option. */
-  final case class OptDescStyle(sep: Doc, hidden: Boolean, surround: Boolean)
-
   /** Generate description for a single option. */
   def optDesc[A](pprefs: ParserPrefs, style: OptDescStyle, info: OptHelpInfo, opt: Opt[A]): Chunk[Doc] = {
     val ns = opt.main.names
