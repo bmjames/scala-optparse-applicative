@@ -59,6 +59,10 @@ When run with the `--help` option, it prints:
 
 Further examples can be found in `src/test`.
 
+License
+-------
+This library is distributed under the [BSD 3-Clause] [4] license. The Kiama library, with which this library may be considered a Combined Work, is distributed under the [GNU Lesser GPL v3] [5].
+
 To Do
 -----
 
@@ -67,3 +71,5 @@ To Do
 [1]: https://hackage.haskell.org/package/optparse-applicative
 [2]: https://github.com/scalaz/scalaz
 [3]: https://code.google.com/p/kiama/
+[4]: http://opensource.org/licenses/BSD-3-Clause
+[5]: http://www.gnu.org/licenses/lgpl.html
