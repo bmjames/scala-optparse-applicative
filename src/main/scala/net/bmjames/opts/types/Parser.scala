@@ -2,7 +2,7 @@ package net.bmjames.opts.types
 
 import net.bmjames.opts.common.{mapParser, treeMapParser}
 import net.bmjames.opts.types.ParserM._
-import scalaz.{~>, Const, ApplicativePlus}
+import scalaz.{NonEmptyList, ~>, Const, ApplicativePlus}
 import scalaz.syntax.applicativePlus._
 
 sealed trait Parser[A] {
@@ -56,9 +56,9 @@ private[opts] trait ParserInstances {
 
       def plus[A](a: Parser[A], b: => Parser[A]): Parser[A] = AltP(a, b)
 
-      override def many[A](a: Parser[A]): Parser[List[A]] = Parser.many(a)
+      override def many[A](a: Parser[A]): Parser[List[A]] =
+        fromM(^(oneM(a), manyM(a))(_ :: _))
 
-      override def some[A](a: Parser[A]): Parser[List[A]] = Parser.some(a)
     }
 }
 
@@ -70,8 +70,8 @@ private[opts] trait ParserFunctions {
   def many[A](p: Parser[A]): Parser[List[A]] =
     fromM(manyM(p))
 
-  def some[A](p: Parser[A]): Parser[List[A]] =
-    fromM(^(oneM(p), manyM(p))(_ :: _))
+  def some[A](p: Parser[A]): Parser[NonEmptyList[A]] =
+    fromM(someM(p))
 
   def optional[A](p: Parser[A]): Parser[Option[A]] =
     p.map[Option[A]](Some(_)) <+> pure(None)

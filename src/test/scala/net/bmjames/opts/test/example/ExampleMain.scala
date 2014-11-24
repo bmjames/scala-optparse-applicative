@@ -4,11 +4,12 @@ import java.io.File
 
 import net.bmjames.opts._
 
+import scalaz.NonEmptyList
 import scalaz.syntax.applicativePlus._
 
 object ExampleMain {
 
-  case class Opts(verbose: Boolean, name: String, inputs: List[File], output: Option[File])
+  case class Opts(verbose: Boolean, name: String, inputs: NonEmptyList[File], output: Option[File])
 
   val parseOpts: Parser[Opts] =
     ^^^(
