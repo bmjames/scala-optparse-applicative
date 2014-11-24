@@ -68,10 +68,10 @@ private[opts] trait ParserFunctions {
     NilP(Some(a))
 
   def many[A](p: Parser[A]): Parser[List[A]] =
-    fromM(^(oneM(p), manyM(p))(_ :: _))
+    fromM(manyM(p))
 
   def some[A](p: Parser[A]): Parser[List[A]] =
-    fromM(manyM(p))
+    fromM(^(oneM(p), manyM(p))(_ :: _))
 
   def optional[A](p: Parser[A]): Parser[Option[A]] =
     p.map[Option[A]](Some(_)) <+> pure(None)
