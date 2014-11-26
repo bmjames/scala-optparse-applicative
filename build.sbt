@@ -1,4 +1,4 @@
-version := "0.3-SNAPSHOT"
+version := "0.2.1"
 
 organization := "net.bmjames"
 
