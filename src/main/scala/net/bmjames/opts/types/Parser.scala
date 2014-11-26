@@ -57,6 +57,9 @@ private[opts] trait ParserInstances {
       def plus[A](a: Parser[A], b: => Parser[A]): Parser[A] = AltP(a, b)
 
       override def many[A](a: Parser[A]): Parser[List[A]] =
+        Parser.many(a)
+
+      override def some[A](a: Parser[A]): Parser[List[A]] =
         fromM(^(oneM(a), manyM(a))(_ :: _))
 
     }
