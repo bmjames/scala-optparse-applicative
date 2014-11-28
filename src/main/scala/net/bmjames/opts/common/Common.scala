@@ -18,7 +18,7 @@ private[opts] trait Common {
   def argMatches[F[_], A](opt: OptReader[A], arg: String)(implicit F: MonadP[F]): Option[StateT[F, Args, A]] =
     opt match {
       case ArgReader(rdr) =>
-        Some(runReadM(rdr.reader, arg).liftM[({type λ[ζ[_],α]=StateT[ζ,Args,α]})#λ])
+        Some(runReadM(rdr.reader, arg).liftM[({type λ[μ[_],α]=StateT[μ,Args,α]})#λ])
       case CmdReader(_, f) =>
         f(arg).map { subp =>
           StateT[F, Args, A] { args =>
@@ -53,12 +53,12 @@ private[opts] trait Common {
         val read: StateT[F, Args, A] = for {
           args <- state.get
           mbArgs = uncons(word.value.toList ++ args)
-          missingArg: StateT[F, Args, (String, Args)] = F.missingArg(noArgErr).liftM[({type λ[ζ[_],α]=StateT[ζ,Args,α]})#λ]
+          missingArg: StateT[F, Args, (String, Args)] = F.missingArg(noArgErr).liftM[({type λ[μ[_],α]=StateT[μ,Args,α]})#λ]
           as <- mbArgs.fold(missingArg)(_.point[({type λ[α]=StateT[F,Args,α]})#λ])
           (arg1, args1) = as
           _ <- state.put(args1)
           run <- rdr.reader.run.run(arg1).fold(
-            e => errorFor(word.name, e).liftM[({type λ[ζ[_],α]=StateT[ζ,Args,α]})#λ],
+            e => errorFor(word.name, e).liftM[({type λ[μ[_],α]=StateT[μ,Args,α]})#λ],
             r => r.point[({type λ[α]=StateT[F,Args,α]})#λ])
         } yield run
         Some(read)
@@ -200,7 +200,7 @@ private[opts] trait Common {
       def apply[AA](fa: Opt[AA]): NondetT[ArgsState[F]#G, AA] = {
         val disambiguate = pprefs.disambiguate && fa.props.visibility > Internal
         optMatches(disambiguate, fa.main, w) match {
-          case Some(matcher) => matcher.liftM[({type λ[ζ[_],α]=NondetT[ζ,α]})#λ]
+          case Some(matcher) => matcher.liftM[({type λ[μ[_],α]=NondetT[μ,α]})#λ]
           case None => NondetT.nondetTMonadPlus[ArgsState[F]#G].empty
         }
       }
@@ -216,7 +216,7 @@ private[opts] trait Common {
         nondetTMonadPlus[ArgsState[F]#G].bind(
           if (isArg(fa.main)) cut[ArgsState[F]#G] else nondetTMonadPlus[ArgsState[F]#G].point(()))(
             p => argMatches[F, AA](fa.main, arg) match {
-              case Some(matcher) => matcher.liftM[({type λ[ζ[_],α]=NondetT[ζ,α]})#λ]
+              case Some(matcher) => matcher.liftM[({type λ[μ[_],α]=NondetT[μ,α]})#λ]
               case None => nondetTMonadPlus[ArgsState[F]#G].empty
             }
           )
