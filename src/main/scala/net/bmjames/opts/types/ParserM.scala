@@ -27,7 +27,7 @@ object ParserM {
     }
 
   def someM[A](p: Parser[A]): ParserM[NonEmptyList[A]] =
-    ^(oneM(p), manyM(p))((x, xs) => NonEmptyList(x, xs: _*))
+    ^(oneM(p), manyM(p))(NonEmptyList.nel)
 
   implicit val parserMMonad: Monad[ParserM] =
     new Monad[ParserM] {
