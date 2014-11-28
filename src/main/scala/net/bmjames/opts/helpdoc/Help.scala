@@ -40,7 +40,7 @@ private[opts] trait Help {
   /** Generate descriptions for commands. */
   def cmdDesc[A](p: Parser[A]): Chunk[Doc] =
     Chunk.vcatChunks(p.mapPoly(_ => new (Opt ~> ({type λ[α]=Const[Chunk[Doc],α]})#λ) {
-      def apply[A](fa: Opt[A]): Const[Chunk[Doc], A] =
+      def apply[AA](fa: Opt[AA]): Const[Chunk[Doc], AA] =
         Const(fa.main match {
           case CmdReader(cmds, p) =>
             Chunk.tabulate(
@@ -70,7 +70,7 @@ private[opts] trait Help {
       }
 
     foldTree(parser.treeMap(info => new (Opt ~> ({type λ[α]=Const[Chunk[Doc],α]})#λ) {
-      def apply[A](fa: Opt[A]): Const[Chunk[Doc], A] = Const(optDesc(pprefs, style, info, fa))
+      def apply[AA](fa: Opt[AA]): Const[Chunk[Doc], AA] = Const(optDesc(pprefs, style, info, fa))
     }))
   }
 
@@ -79,7 +79,7 @@ private[opts] trait Help {
     val style = OptDescStyle(sep = ",", hidden = true, surround = false)
 
     tabulate(parser.mapPoly(info => new (Opt ~> ({type λ[α]=Const[Option[(Doc, Doc)],α]})#λ) {
-      def apply[A](fa: Opt[A]): Const[Option[(Doc, Doc)], A] = Const {
+      def apply[AA](fa: Opt[AA]): Const[Option[(Doc, Doc)], AA] = Const {
         val n = optDesc(pprefs, style, info, fa)
         val h = fa.props.help
         val hdef = Chunk(fa.props.showDefault.map(s => PP.parens(PP.string("default:") <+> PP.string(s))))

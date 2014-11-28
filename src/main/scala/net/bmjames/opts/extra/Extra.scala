@@ -53,13 +53,13 @@ private[opts] trait Extra {
         case _ => ExitSuccess
       }
 
-      def withContext[A, B](ctx: Context, pinfo: ParserInfo[A], f: List[String] => ParserInfo ~> (({type λ[α]=Const[B,α]})#λ)): B =
+      def withContext[AA, B](ctx: Context, pinfo: ParserInfo[AA], f: List[String] => ParserInfo ~> (({type λ[α]=Const[B,α]})#λ)): B =
         ctx match {
           case NullContext      => f(Nil)(pinfo).getConst
           case HasContext(n, i) => f(n)(i).getConst
         }
 
-      def usage_help[A](progName: String, names: List[String], i: ParserInfo[A]): ParserHelp =
+      def usage_help[AA](progName: String, names: List[String], i: ParserInfo[AA]): ParserHelp =
         msg match {
           case InfoMsg (_) => ParserHelp.empty
           case _ => usageHelp(Chunk.vcatChunks(List(
@@ -81,12 +81,12 @@ private[opts] trait Extra {
         case _            => pprefs.showHelpOnError
       }
 
-      def baseHelp[A](i: ParserInfo[A]): ParserHelp =
+      def baseHelp[AA](i: ParserInfo[AA]): ParserHelp =
         if (showFullHelp) headerHelp(i.header) |+| footerHelp(i.footer) |+| parserHelp(pprefs, i.parser)
         else ParserHelp.empty
 
       val h = withContext[A, ParserHelp](ctx, pinfo, names => new (ParserInfo ~> (({type λ[α]=Const[ParserHelp,α]})#λ)) {
-        def apply[A](fa: ParserInfo[A]): Const[ParserHelp, A] = Const {
+        def apply[AA](fa: ParserInfo[AA]): Const[ParserHelp, AA] = Const {
           baseHelp(fa) |+| usage_help(progName, names, fa) |+| error_help
         }
       })

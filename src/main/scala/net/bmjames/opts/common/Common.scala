@@ -123,7 +123,7 @@ private[opts] trait Common {
   /** Map a polymorphic function over all the options of a parser, and collect the results in a list.
     */
   def mapParser[A, B](f: OptHelpInfo => (Opt ~> ({type λ[α]=Const[B,α]})#λ), p: Parser[A]): List[B] = {
-    def flatten[A](t: OptTree[A]): List[A] =
+    def flatten[AA](t: OptTree[AA]): List[AA] =
       t match {
         case Leaf(x)      => List(x)
         case MultNode(xs) => xs.flatMap(flatten)
@@ -135,10 +135,10 @@ private[opts] trait Common {
   /** Like mapParser, but collect the results in a tree structure.
     */
   def treeMapParser[A, B](g: OptHelpInfo => (Opt ~> ({type λ[α]=Const[B,α]})#λ), p: Parser[A]): OptTree[B] = {
-    def hasDefault[A](p: Parser[A]): Boolean =
+    def hasDefault[AA](p: Parser[AA]): Boolean =
       evalParser(p).isDefined
 
-    def go[A](m: Boolean, d: Boolean, f: OptHelpInfo => (Opt ~> ({type λ[α]=Const[B,α]})#λ), p: Parser[A]): OptTree[B] =
+    def go[AA](m: Boolean, d: Boolean, f: OptHelpInfo => (Opt ~> ({type λ[α]=Const[B,α]})#λ), p: Parser[AA]): OptTree[B] =
       p match {
         case NilP(_) => MultNode(Nil)
         case OptP(opt) if opt.props.visibility > Internal => Leaf(f(OptHelpInfo(m, d))(opt).getConst)
@@ -154,13 +154,13 @@ private[opts] trait Common {
   }
 
   def simplify[A](as: OptTree[A]): OptTree[A] = {
-    def removeMult[A](as: OptTree[A]): List[OptTree[A]] =
+    def removeMult[AA](as: OptTree[AA]): List[OptTree[AA]] =
       as match {
         case MultNode(ts) => ts
         case t => List(t)
       }
 
-    def removeAlt[A](as: OptTree[A]): List[OptTree[A]] =
+    def removeAlt[AA](as: OptTree[AA]): List[OptTree[AA]] =
       as match {
         case AltNode(ts)   => ts
         case MultNode(Nil) => Nil
@@ -197,7 +197,7 @@ private[opts] trait Common {
 
   def searchOpt[F[_]: MonadP, A](pprefs: ParserPrefs, w: OptWord, p: Parser[A]): NondetT[ArgsState[F]#G, Parser[A]] = {
     val f = new (Opt ~> ({type λ[α]=NondetT[ArgsState[F]#G,α]})#λ) {
-      def apply[A](fa: Opt[A]): NondetT[ArgsState[F]#G, A] = {
+      def apply[AA](fa: Opt[AA]): NondetT[ArgsState[F]#G, AA] = {
         val disambiguate = pprefs.disambiguate && fa.props.visibility > Internal
         optMatches(disambiguate, fa.main, w) match {
           case Some(matcher) => matcher.liftM[({type λ[ζ[_],α]=NondetT[ζ,α]})#λ]
@@ -212,10 +212,10 @@ private[opts] trait Common {
 
   def searchArg[F[_]: MonadP, A](arg: String, p: Parser[A]): NondetT[ArgsState[F]#G, Parser[A]] = {
     val f = new (Opt ~> ({type λ[α]=NondetT[ArgsState[F]#G,α]})#λ) {
-      def apply[A](fa: Opt[A]): NondetT[ArgsState[F]#G, A] =
+      def apply[AA](fa: Opt[AA]): NondetT[ArgsState[F]#G, AA] =
         nondetTMonadPlus[ArgsState[F]#G].bind(
           if (isArg(fa.main)) cut[ArgsState[F]#G] else nondetTMonadPlus[ArgsState[F]#G].point(()))(
-            p => argMatches[F, A](fa.main, arg) match {
+            p => argMatches[F, AA](fa.main, arg) match {
               case Some(matcher) => matcher.liftM[({type λ[ζ[_],α]=NondetT[ζ,α]})#λ]
               case None => nondetTMonadPlus[ArgsState[F]#G].empty
             }
