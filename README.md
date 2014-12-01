@@ -57,7 +57,11 @@ When run with the `--help` option, it prints:
       --hello TARGET           Target for the greeting
       --quiet                  Whether to be quiet
 
-Further examples can be found in `src/test`.
+
+Advanced examples
+-----------------
+
+Further examples can be found in `src/test/examples`.
 
 License
 -------
