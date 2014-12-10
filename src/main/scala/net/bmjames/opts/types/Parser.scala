@@ -34,9 +34,7 @@ case class MultP[A, B](p1: Parser[A => B], p2: Parser[A]) extends Parser[B]
 
 case class AltP[A](p1: Parser[A], p2: Parser[A]) extends Parser[A]
 
-case class BindP[A, B](p: Parser[A], f: A => Parser[B]) extends Parser[B] {
-  type X = A
-}
+case class BindP[A, B](p: Parser[A], f: A => Parser[B]) extends Parser[B]
 
 object Parser extends ParserInstances with ParserFunctions
 
