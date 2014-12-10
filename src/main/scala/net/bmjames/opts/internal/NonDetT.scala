@@ -31,6 +31,12 @@ private[internal] trait BoolState[F[_]] {
 
 object NondetT {
 
+  def empty[F[_] : Monad, A]: NondetT[F, A] =
+    NondetT(ltmp[F].empty)
+
+  def pure[F[_] : Monad, A](a: => A): NondetT[F, A] =
+    NondetT(ltmp[F].point(a))
+
   def cut[F[_]: Monad]: NondetT[F, Unit] =
     NondetT(mState[F].put(true).liftM[ListT])
 
@@ -50,9 +56,9 @@ object NondetT {
     new MonadPlus[({type λ[α] = NondetT[F, α]})#λ] {
       def bind[A, B](fa: NondetT[F, A])(f: A => NondetT[F, B]): NondetT[F, B] = fa.flatMap(f)
 
-      def point[A](a: => A): NondetT[F, A] = NondetT(ltmp[F].point(a))
+      def point[A](a: => A): NondetT[F, A] = NondetT.pure(a)
 
-      def empty[A]: NondetT[F, A] = NondetT(ltmp[F].empty)
+      def empty[A]: NondetT[F, A] = NondetT.empty
 
       def plus[A](a: NondetT[F, A], b: => NondetT[F, A]): NondetT[F, A] = a orElse b
     }

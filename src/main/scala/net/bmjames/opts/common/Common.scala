@@ -202,7 +202,7 @@ private[opts] trait Common {
         val disambiguate = pprefs.disambiguate && fa.props.visibility > Internal
         optMatches(disambiguate, fa.main, w) match {
           case Some(matcher) => matcher.liftM[({type λ[μ[_],α]=NondetT[μ,α]})#λ]
-          case None => NondetT.nondetTMonadPlus[ArgsState[F]#G].empty
+          case None          => NondetT.empty[ArgsState[F]#G, AA]
         }
       }
     }
@@ -214,10 +214,10 @@ private[opts] trait Common {
   def searchArg[F[_]: MonadP, A](arg: String, p: Parser[A]): NondetT[ArgsState[F]#G, Parser[A]] = {
     val f = new (Opt ~> ({type λ[α]=NondetT[ArgsState[F]#G,α]})#λ) {
       def apply[AA](fa: Opt[AA]): NondetT[ArgsState[F]#G, AA] =
-        (if (isArg(fa.main)) cut[ArgsState[F]#G] else nondetTMonadPlus[ArgsState[F]#G].point(())).flatMap(
+        (if (isArg(fa.main)) cut[ArgsState[F]#G] else NondetT.pure[ArgsState[F]#G, Unit](())).flatMap(
           p => argMatches[F, AA](fa.main, arg) match {
             case Some(matcher) => matcher.liftM[({type λ[μ[_],α]=NondetT[μ,α]})#λ]
-            case None => nondetTMonadPlus[ArgsState[F]#G].empty
+            case None          => NondetT.empty[ArgsState[F]#G, AA]
           }
         )
     }
