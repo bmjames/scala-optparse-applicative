@@ -213,13 +213,12 @@ private[opts] trait Common {
   def searchArg[F[_]: MonadP, A](arg: String, p: Parser[A]): NondetT[ArgsState[F]#G, Parser[A]] = {
     val f = new (Opt ~> ({type λ[α]=NondetT[ArgsState[F]#G,α]})#λ) {
       def apply[AA](fa: Opt[AA]): NondetT[ArgsState[F]#G, AA] =
-        nondetTMonadPlus[ArgsState[F]#G].bind(
-          if (isArg(fa.main)) cut[ArgsState[F]#G] else nondetTMonadPlus[ArgsState[F]#G].point(()))(
-            p => argMatches[F, AA](fa.main, arg) match {
-              case Some(matcher) => matcher.liftM[({type λ[μ[_],α]=NondetT[μ,α]})#λ]
-              case None => nondetTMonadPlus[ArgsState[F]#G].empty
-            }
-          )
+        (if (isArg(fa.main)) cut[ArgsState[F]#G] else nondetTMonadPlus[ArgsState[F]#G].point(())).flatMap(
+          p => argMatches[F, AA](fa.main, arg) match {
+            case Some(matcher) => matcher.liftM[({type λ[μ[_],α]=NondetT[μ,α]})#λ]
+            case None => nondetTMonadPlus[ArgsState[F]#G].empty
+          }
+        )
     }
     searchParser[ArgsState[F]#G, A](f, p)
   }
@@ -236,9 +235,8 @@ private[opts] trait Common {
       case AllowOpts =>
         val p1: NondetT[ArgsState[F]#G, Parser[A]] = searchArg[F, A](arg, p)
         val w = P.hoistMaybe[({type λ[α]=NondetT[ArgsState[F]#G, α]})#λ, OptWord](parseWord(arg))(NondetT.nondetTMonadPlus[ArgsState[F]#G])
-        val p2: NondetT[ArgsState[F]#G, Parser[A]] =
-          NondetT.nondetTMonadPlus[ArgsState[F]#G].bind(w)(searchOpt[F, A](pprefs, _, p))
-        NondetT.nondetTMonadPlus[ArgsState[F]#G].plus(p1, p2)
+        val p2 = w.flatMap(searchOpt[F, A](pprefs, _, p))
+        p1 orElse p2
     }
 
   /** Apply a Parser to a command line, and return a result and leftover arguments.

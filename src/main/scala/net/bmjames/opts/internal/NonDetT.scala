@@ -17,6 +17,12 @@ final case class NondetT[F[_], A](run: ListT[BoolState[F]#λ, A]) {
     } yield a2
     NondetT(ltmp[F].plus(run, run2))
   }
+
+  def flatMap[B](f: A => NondetT[F, B])(implicit F: Monad[F]): NondetT[F, B] =
+    NondetT(ltmp[F].bind(run)(f andThen (_.run)))
+
+  def orElse(that: NondetT[F, A])(implicit F: Monad[F]): NondetT[F, A] =
+    NondetT(ltmp[F].plus(run, that.run))
 }
 
 private[internal] trait BoolState[F[_]] {
@@ -42,15 +48,13 @@ object NondetT {
 
   implicit def nondetTMonadPlus[F[_] : Monad]: MonadPlus[({type λ[α]=NondetT[F,α]})#λ] =
     new MonadPlus[({type λ[α] = NondetT[F, α]})#λ] {
-      def bind[A, B](fa: NondetT[F, A])(f: A => NondetT[F, B]): NondetT[F, B] =
-        NondetT(ltmp[F].bind(fa.run)(f andThen (_.run)))
+      def bind[A, B](fa: NondetT[F, A])(f: A => NondetT[F, B]): NondetT[F, B] = fa.flatMap(f)
 
       def point[A](a: => A): NondetT[F, A] = NondetT(ltmp[F].point(a))
 
       def empty[A]: NondetT[F, A] = NondetT(ltmp[F].empty)
 
-      def plus[A](a: NondetT[F, A], b: => NondetT[F, A]): NondetT[F, A] =
-        NondetT(ltmp[F].plus(a.run, b.run))
+      def plus[A](a: NondetT[F, A], b: => NondetT[F, A]): NondetT[F, A] = a orElse b
     }
 
   implicit def nondetTTrans: MonadTrans[NondetT] =
