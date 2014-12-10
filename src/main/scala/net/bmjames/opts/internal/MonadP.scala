@@ -5,6 +5,7 @@ import scalaz.Id.Id
 import scalaz.WriterT.{writerT, writerTHoist}
 import scalaz.EitherT.eitherTHoist
 import scalaz.syntax.monadPlus._
+import scalaz.syntax.std.option._
 
 import net.bmjames.opts.types.{ParseError, ParserPrefs, Parser, ParserInfo}
 
@@ -33,9 +34,6 @@ object P {
 
   def tell[F[_]: Applicative, W](w: W): WriterT[F, W, Unit] =
     writerT((w, ()).point[F])
-
-  def hoistMaybe[F[_], A](fa: Option[A])(implicit F: ApplicativePlus[F]): F[A] =
-    fa.fold(F.empty[A])(a => F.point(a))
 
   def hoistEither[F[_], A](fa: ParseError \/ A)(implicit F: MonadP[F]): F[A] =
     fa.fold(F.error, a => F.point(a))
@@ -75,7 +73,7 @@ object P {
         P(EitherT.left(e.point[ContextWriter]))
 
       def exit[A, B](p: Parser[B], a: Option[A]): P[A] =
-        P(hoistMaybe[P_, A](a))
+        P(a.orEmpty[P_])
     }
 
 }

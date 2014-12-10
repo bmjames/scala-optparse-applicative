@@ -5,6 +5,7 @@ import net.bmjames.opts.types._
 
 import scalaz._
 import scalaz.std.option._
+import scalaz.syntax.std.option._
 import scalaz.syntax.monadPlus._
 
 private[opts] trait Common {
@@ -105,7 +106,7 @@ private[opts] trait Common {
       case bindP @ BindP(p, k) =>
         for {
           p1 <- searchParser(f, p)
-          x  <- P.hoistMaybe[({type λ[α]=NondetT[F,α]})#λ, bindP.X](evalParser(p1))
+          x  <- evalParser(p1).orEmpty[({type λ[α]=NondetT[F,α]})#λ]
         } yield k(x)
     }
 
@@ -234,7 +235,8 @@ private[opts] trait Common {
       }
       case AllowOpts =>
         val p1: NondetT[ArgsState[F]#G, Parser[A]] = searchArg[F, A](arg, p)
-        val w = P.hoistMaybe[({type λ[α]=NondetT[ArgsState[F]#G, α]})#λ, OptWord](parseWord(arg))(NondetT.nondetTMonadPlus[ArgsState[F]#G])
+        val ev = NondetT.nondetTMonadPlus[ArgsState[F]#G]
+        val w = parseWord(arg).orEmpty[({type λ[α]=NondetT[ArgsState[F]#G, α]})#λ](ev, ev)
         val p2 = w.flatMap(searchOpt[F, A](pprefs, _, p))
         p1 orElse p2
     }
@@ -257,7 +259,7 @@ private[opts] trait Common {
           s     <- doStep(prefs, arg, argt)
           (args1, mp) = s
           run <- mp match {
-            case None => P.hoistMaybe[F, (Args, A)](result) <+> parseError(arg)
+            case None => result.orEmpty[F] <+> parseError(arg)
             case Some(p1) => runParser(policy, p1, args1)
           }
         } yield run
