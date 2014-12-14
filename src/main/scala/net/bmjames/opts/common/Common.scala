@@ -27,9 +27,9 @@ private[opts] trait Common {
               _      <- F.setContext(Some(arg), subp)
               prefs  <- F.getPrefs
               runSub <- if (prefs.backtrack)
-                runParser(getPolicy(subp), subp.parser, args)
-              else
-                runParserInfo(subp, args).map(Nil -> _)
+                          runParser(getPolicy(subp), subp.parser, args)
+                        else
+                          runParserInfo(subp, args).map(Nil -> _)
             } yield runSub
           }
         }
@@ -268,7 +268,7 @@ private[opts] trait Common {
 
   def parseError[F[_], A](arg: String)(implicit F: MonadP[F]): F[A] = {
     val msg = if (arg.startsWith("-")) s"Invalid option `$arg'"
-    else s"Invalid argument `$arg'"
+              else s"Invalid argument `$arg'"
     F.error(ErrorMsg(msg))
   }
 
