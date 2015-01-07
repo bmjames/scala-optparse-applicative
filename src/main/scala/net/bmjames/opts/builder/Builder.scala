@@ -20,12 +20,40 @@ private[opts] trait Builder {
   // Instead, I've implemented fromTryCatch, so you can use Scala's unsafe conversions such as 'toInt'
 
   /** String reader. */
-  val str: ReadM[String] =
-    ReadM.ask
+  val str: ReadM[String] = ReadM.ask
 
   /** Int reader. */
-  val int: ReadM[Int] =
-    fromTryCatch(_.toInt)
+  val int: ReadM[Int] = fromTryCatch(_.toInt)
+
+  /** Char reader */
+  val char: ReadM[Char] =
+    ReadM.ask.flatMap { s =>
+      s.toList match {
+        case c :: Nil => c.point[ReadM]
+        case _ => ReadM.error(s"${s} is not a valid Char")
+      }
+    }
+
+  /** Byte reader */
+  val byte: ReadM[Byte] = fromTryCatch(_.toByte)
+
+  /** Short reader */
+  val short: ReadM[Short] = fromTryCatch(_.toShort)
+
+  /** Long reader */
+  val long: ReadM[Long] = fromTryCatch(_.toLong)
+
+  /** BigInt reader */
+  val bigInt: ReadM[BigInt] = fromTryCatch(BigInt.apply)
+
+  /** Float reader */
+  val float: ReadM[Float] = fromTryCatch(_.toFloat)
+
+  /** Double reader */
+  val double: ReadM[Double] = fromTryCatch(_.toDouble)
+
+  /** BigDecimal reader */
+  val bigDecimal: ReadM[BigDecimal] = fromTryCatch(BigDecimal.apply)
 
   /** Turns an unsafe conversion function into a reader by catching non-fatal exceptions. */
   def fromTryCatch[A](f: String => A): ReadM[A] =
@@ -36,7 +64,6 @@ private[opts] trait Builder {
   /** Null Option reader. All arguments will fail validation. */
   def disabled[A]: ReadM[A] =
     ReadM.error("disabled option")
-
 
   /** Specify a short name for an option. */
   def short[F[_], A](c: Char)(implicit F: HasName[F]): Mod[F, A] =
@@ -105,11 +132,37 @@ private[opts] trait Builder {
   }
 
   /** Builder for a String argument. */
-  def strArgument(mod: Mod[ArgumentFields, String]*): Parser[String] =
-    argument(str, mod.toList.suml)
+  def strArgument(mod: Mod[ArgumentFields, String]*): Parser[String] = makeArgument(str, mod)
 
-  def intArgument(mod: Mod[ArgumentFields, Int]*): Parser[Int] =
-    argument(int, mod.toList.suml)
+  /** Builder for a Int argument. */
+  def intArgument(mod: Mod[ArgumentFields, Int]*): Parser[Int] = makeArgument(int, mod)
+
+  /** Builder for a Char argument. */
+  def charArgument(mod: Mod[ArgumentFields, Char]*): Parser[Char] = makeArgument(char, mod)
+
+  /** Builder for a Byte argument. */
+  def byteArgument(mod: Mod[ArgumentFields, Byte]*): Parser[Byte] = makeArgument(byte, mod)
+
+  /** Builder for a Short argument. */
+  def shortArgument(mod: Mod[ArgumentFields, Short]*): Parser[Short] = makeArgument(short, mod)
+
+  /** Builder for a Long argument. */
+  def longArgument(mod: Mod[ArgumentFields, Long]*): Parser[Long] = makeArgument(long, mod)
+
+  /** Builder for a BigInt argument. */
+  def bigIntArgument(mod: Mod[ArgumentFields, BigInt]*): Parser[BigInt] = makeArgument(bigInt, mod)
+
+  /** Builder for a Float argument. */
+  def floatArgument(mod: Mod[ArgumentFields, Float]*): Parser[Float] = makeArgument(float, mod)
+
+  /** Builder for a Double argument. */
+  def doubleArgument(mod: Mod[ArgumentFields, Double]*): Parser[Double] = makeArgument(double, mod)
+
+  /** Builder for a BigDecimal argument. */
+  def bigDecimalArgument(mod: Mod[ArgumentFields, BigDecimal]*): Parser[BigDecimal] = makeArgument(bigDecimal, mod)
+
+  private def makeArgument[A](readM: ReadM[A], mod: Seq[Mod[ArgumentFields, A]]): Parser[A] =
+    argument(readM, mod.toList.suml)
 
   /** Builder for a flag parser. */
   def flag[A](defV: A, actV: A, mod: Mod[FlagFields, A]*): Parser[A] =
@@ -136,12 +189,37 @@ private[opts] trait Builder {
     abortOption(InfoMsg(s), mod.toList.suml)
 
   /** Builder for an option taking a String argument. */
-  def strOption(mod: Mod[OptionFields, String]*): Parser[String] =
-    option(str, mod.toList.suml)
+  def strOption(mod: Mod[OptionFields, String]*): Parser[String] = makeOption(str, mod)
 
-  /** Builder for an option taking an integer argument. */
-  def intOption(mod: Mod[OptionFields, Int]*): Parser[Int] =
-    option(int, mod.toList.suml)
+  /** Builder for an option taking a Int argument. */
+  def intOption(mod: Mod[OptionFields, Int]*): Parser[Int] = makeOption(int, mod)
+
+  /** Builder for an option taking a Char argument. */
+  def charOption(mod: Mod[OptionFields, Char]*): Parser[Char] = makeOption(char, mod)
+
+  /** Builder for an option taking a Byte argument. */
+  def byteOption(mod: Mod[OptionFields, Byte]*): Parser[Byte] = makeOption(byte, mod)
+
+  /** Builder for an option taking a Short argument. */
+  def shortOption(mod: Mod[OptionFields, Short]*): Parser[Short] = makeOption(short, mod)
+
+  /** Builder for an option taking a Long argument. */
+  def longOption(mod: Mod[OptionFields, Long]*): Parser[Long] = makeOption(long, mod)
+
+  /** Builder for an option taking a BigInt argument. */
+  def bigIntOption(mod: Mod[OptionFields, BigInt]*): Parser[BigInt] = makeOption(bigInt, mod)
+
+  /** Builder for an option taking a Float argument. */
+  def floatOption(mod: Mod[OptionFields, Float]*): Parser[Float] = makeOption(float, mod)
+
+  /** Builder for an option taking a Double argument. */
+  def doubleOption(mod: Mod[OptionFields, Double]*): Parser[Double] = makeOption(double, mod)
+
+  /** Builder for an option taking a BigDecimal argument. */
+  def bigDecimalOption(mod: Mod[OptionFields, BigDecimal]*): Parser[BigDecimal] = makeOption(bigDecimal, mod)
+
+  private def makeOption[A](readM: ReadM[A], mod: Seq[Mod[OptionFields, A]]): Parser[A] =
+    option(readM, mod.toList.suml)
 
   def option[A](r: ReadM[A], mod: Mod[OptionFields, A]*): Parser[A] = {
     val Mod(f, d, g) = metavar[OptionFields, A]("ARG") |+| mod.toList.suml
