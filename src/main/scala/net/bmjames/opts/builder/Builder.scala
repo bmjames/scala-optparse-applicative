@@ -28,10 +28,10 @@ private[opts] trait Builder {
 
   /** Char reader */
   val readChar: ReadM[Char] =
-    ReadM.ask.flatMap { s =>
-      s.toList match {
+    ReadM.ask.flatMap { arg =>
+      arg.toList match {
         case c :: Nil => c.point[ReadM]
-        case _ => ReadM.error(s"${s} is not a valid Char")
+        case _        => ReadM.error(s"cannot parse value `$arg'")
       }
     }
 
