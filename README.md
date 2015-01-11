@@ -18,7 +18,7 @@ Version 0.2.1 of scala-optparse-applicative is available for Scala 2.10 and 2.11
 
 License
 -------
-This library is distributed under the [BSD 3-Clause] [4] license. The Kiama library is distributed under the [GNU Lesser GPL v3] [5].
+This library is distributed under a [BSD 3-Clause] [4] license (see `LICENSE`). The Kiama library is distributed under the [GNU Lesser GPL v3] [5].
 
 Simple example
 --------------
