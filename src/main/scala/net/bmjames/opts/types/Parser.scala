@@ -23,7 +23,7 @@ sealed trait Parser[A] {
     treeMapParser[A, B](g, this)
 
   /** Alias for <+> */
-  def <|>(that: Parser[A]): Parser[A] = this <+> that
+  final def <|>(that: Parser[A]): Parser[A] = this <+> that
 }
 
 case class NilP[A](fa: Option[A]) extends Parser[A]
