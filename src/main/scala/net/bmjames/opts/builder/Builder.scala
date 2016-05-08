@@ -251,6 +251,12 @@ private[opts] trait Builder {
   def headerDoc[A](doc: Option[Doc]): InfoMod[A] =
     Endo(_.copy(header = Chunk(doc)))
 
+  def footer[A](footer: String): InfoMod[A] =
+    Endo(_.copy(footer = Chunk.paragraph(footer)))
+
+  def footerDoc[A](doc: Option[Doc]): InfoMod[A] =
+    Endo(_.copy(footer = Chunk(doc)))
+
   import Chunk.empty
 
   def info[A](parser: Parser[A], mod: InfoMod[A]*): ParserInfo[A] = {
