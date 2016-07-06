@@ -1,4 +1,4 @@
-version := "0.3"
+version := "0.4-SNAPSHOT"
 
 organization := "net.bmjames"
 
@@ -17,6 +17,6 @@ scalacOptions ++= List(
   "-language:higherKinds")
 
 libraryDependencies ++= List(
-  "org.scalaz" %% "scalaz-core" % "7.1.4",
+  "org.scalaz" %% "scalaz-core" % "7.2.4",
   "com.googlecode.kiama" %% "kiama" % "1.7.0",
   "org.scalacheck" %% "scalacheck" % "1.12.5" % "test")

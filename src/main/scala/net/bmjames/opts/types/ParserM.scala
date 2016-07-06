@@ -1,6 +1,6 @@
 package net.bmjames.opts.types
 
-import scalaz.{NonEmptyList, Monad}
+import scalaz.{IList, NonEmptyList, Monad}
 import scalaz.std.option.{some, none}
 import scalaz.syntax.applicativePlus._
 
@@ -27,7 +27,7 @@ object ParserM {
     }
 
   def someM[A](p: Parser[A]): ParserM[NonEmptyList[A]] =
-    ^(oneM(p), manyM(p))(NonEmptyList.nel)
+    ^(oneM(p), manyM(p).map(IList.fromList))(NonEmptyList.nel)
 
   implicit val parserMMonad: Monad[ParserM] =
     new Monad[ParserM] {
