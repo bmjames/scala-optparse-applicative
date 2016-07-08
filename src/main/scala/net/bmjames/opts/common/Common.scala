@@ -36,7 +36,7 @@ private[opts] trait Common {
       case _ => None
     }
 
-  private def argsMState[F[_]: Monad] = MonadState[({type λ[β]=StateT[F,Args,β]})#λ, Args]
+  private def argsMState[F[_]: Monad] = MonadState[({type λ[α]=StateT[F,Args,α]})#λ, Args]
 
   def optMatches[F[_], A](disambiguate: Boolean, opt: OptReader[A], word: OptWord)(implicit F: MonadP[F]): Option[StateT[F, Args, A]] = {
     def hasName(n: OptName, ns: List[OptName]): Boolean =

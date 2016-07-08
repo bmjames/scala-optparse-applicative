@@ -38,7 +38,7 @@ object ValidationExample {
       case Success(UserData(u, e)) =>
         println(s"Congratulations, $u <$e>, you are officially super-valid.")
       case Failure(errors) =>
-        errors.list.toList.foreach(System.err.println)
+        errors.foreach(System.err.println)
         System.exit(1)
     }
   }

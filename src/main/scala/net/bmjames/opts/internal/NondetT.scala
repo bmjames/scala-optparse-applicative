@@ -50,7 +50,7 @@ object NondetT {
       }
 
   protected def ltmp[F[_]: Monad] = listTMonadPlus[BoolState[F]#λ]
-  protected def mState[F[_]: Monad] = MonadState[({type λ[β]=StateT[F,Boolean,β]})#λ, Boolean]
+  protected def mState[F[_]: Monad] = MonadState[({type λ[α]=StateT[F,Boolean,α]})#λ, Boolean]
 
   implicit def nondetTMonadPlus[F[_] : Monad]: MonadPlus[({type λ[α]=NondetT[F,α]})#λ] =
     new MonadPlus[({type λ[α] = NondetT[F, α]})#λ] {

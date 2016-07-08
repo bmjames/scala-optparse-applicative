@@ -4,9 +4,9 @@ organization := "net.bmjames"
 
 name := "scala-optparse-applicative"
 
-scalaVersion := "2.11.7"
+scalaVersion := "2.11.8"
 
-crossScalaVersions := List("2.10.6", "2.11.7")
+crossScalaVersions := List("2.10.6", "2.11.8")
 
 scalacOptions ++= List(
   "-feature",
