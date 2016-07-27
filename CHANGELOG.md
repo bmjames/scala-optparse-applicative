@@ -1,4 +1,4 @@
-### Version 0.4 (TBD)
+### Version 0.4 (27 July 2016)
 
 * Updated Scalaz version to 7.2.4 (Kris Nuttycombe, Sam Roberts)
 * Updated Scala 2.11 series version to 2.11.8 (Sam Roberts)
