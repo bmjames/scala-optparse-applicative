@@ -11,8 +11,7 @@ final case class NondetT[F[_], A](run: ListT[BoolState[F]#λ, A]) {
 
   def !(that: NondetT[F, A])(implicit F: Monad[F]): NondetT[F, A] = {
     val run2 = for {
-      s <- mState[F].get.liftM[ListT]
-      if !s
+      s  <- mState[F].get.liftM[ListT].filter(!_)
       a2 <- that.run
     } yield a2
     NondetT(ltmp[F].plus(run, run2))
