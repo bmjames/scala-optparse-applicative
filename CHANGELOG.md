@@ -1,3 +1,6 @@
+### Version 0.5 (5 Nov 2016)
+* Add support for Scala 2.12 (Rob Norris)
+
 ### Version 0.4 (27 July 2016)
 
 * Updated Scalaz version to 7.2.4 (Kris Nuttycombe, Sam Roberts)
