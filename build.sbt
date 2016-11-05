@@ -6,7 +6,7 @@ name := "scala-optparse-applicative"
 
 scalaVersion := "2.11.8"
 
-crossScalaVersions := List("2.10.6", "2.11.8")
+crossScalaVersions := List("2.10.6", "2.11.8", "2.12.0")
 
 scalacOptions ++= List(
   "-feature",
@@ -17,6 +17,6 @@ scalacOptions ++= List(
   "-language:higherKinds")
 
 libraryDependencies ++= List(
-  "org.scalaz" %% "scalaz-core" % "7.2.4",
-  "com.googlecode.kiama" %% "kiama" % "1.7.0",
-  "org.scalacheck" %% "scalacheck" % "1.12.5" % "test")
+  "org.scalaz" %% "scalaz-core" % "7.2.7",
+  "com.googlecode.kiama" %% "kiama" % "1.8.0",
+  "org.scalacheck" %% "scalacheck" % "1.12.6" % "test")
