@@ -18,5 +18,5 @@ scalacOptions ++= List(
 
 libraryDependencies ++= List(
   "org.scalaz" %% "scalaz-core" % "7.2.7",
-  "com.googlecode.kiama" %% "kiama" % "1.8.0",
+  // "com.googlecode.kiama" %% "kiama" % "1.8.0",
   "org.scalacheck" %% "scalacheck" % "1.12.6" % "test")

@@ -8,20 +8,18 @@ import scalaz.std.option._
 import scalaz.syntax.std.list._
 import scalaz.syntax.std.boolean._
 import scalaz.syntax.functor._
+import scalaz.syntax.monoid._
 
-import org.kiama.output.PrettyPrinter.Doc
-import org.kiama.output.{PrettyPrinter => PP}
 
 private[opts] trait Help {
 
-  import Pretty._
   import Chunk._
 
   /** Generate description for a single option. */
   def optDesc[A](pprefs: ParserPrefs, style: OptDescStyle, info: OptHelpInfo, opt: Opt[A]): Chunk[Doc] = {
     val ns = opt.main.names
     val mv = Chunk.fromString(opt.props.metaVar)
-    val descs = ns.sorted.map(PP.string _ compose showOption)
+    val descs = ns.sorted.map(Doc.string _ compose showOption)
     val desc = Chunk.fromList(descs.intersperse(style.sep)) <<+>> mv
     val vis = opt.props.visibility
     val showOpt = if (vis == Hidden) style.hidden else vis == Visible
@@ -30,9 +28,9 @@ private[opts] trait Help {
     def render(chunk: Chunk[Doc]): Chunk[Doc] =
       if (! showOpt) Chunk.empty
       else if (chunk.isEmpty || ! style.surround) chunk <> suffix
-      else if (info.default) chunk.map(PP.brackets) <> suffix
+      else if (info.default) chunk.map(_.brackets) <> suffix
       else if (descs.drop(1).isEmpty) chunk <> suffix
-      else chunk.map(PP.parens) <> suffix
+      else chunk.map(_.parens) <> suffix
 
     render(desc)
   }
@@ -45,7 +43,7 @@ private[opts] trait Help {
           case CmdReader(cmds, p) =>
             Chunk.tabulate(
               for (cmd <- cmds.reverse; d <- p(cmd).map(_.progDesc).toList)
-              yield (PP.string(cmd), PP.align(extract(d)))
+              yield (Doc.string(cmd), extract(d)) //TODO Colt: Check alignment
             )
           case _ => Chunk.empty
         })
@@ -53,13 +51,13 @@ private[opts] trait Help {
 
   /** Generate a brief help text for a parser. */
   def briefDesc[A](pprefs: ParserPrefs, parser: Parser[A]): Chunk[Doc] = {
-    val style = OptDescStyle(sep = "|", hidden = false, surround = true)
+    val style = OptDescStyle(sep = Doc.string("|"), hidden = false, surround = true)
 
     def altNode(chunks: List[Chunk[Doc]]): Chunk[Doc] =
       chunks match {
         case List(n) => n
-        case ns      => ns.foldRight(Chunk.empty[Doc])(chunked(_ </> PP.char('|') </> _))
-          .map(PP.parens)
+        case ns      => ns.foldRight(Chunk.empty[Doc])(chunked(_.withSoftline(Doc.string("|")).withSoftline(_)))
+          .map(_.parens)
       }
 
     def foldTree(tree: OptTree[Chunk[Doc]]): Chunk[Doc] =
@@ -76,14 +74,14 @@ private[opts] trait Help {
 
   /** Generate a full help text for a parser. */
   def fullDesc[A](pprefs: ParserPrefs, parser: Parser[A]): Chunk[Doc] = {
-    val style = OptDescStyle(sep = ",", hidden = true, surround = false)
+    val style = OptDescStyle(sep = Doc.string(","), hidden = true, surround = false)
 
     tabulate(parser.mapPoly(info => new (Opt ~> ({type λ[α]=Const[Option[(Doc, Doc)],α]})#λ) {
       def apply[AA](fa: Opt[AA]): Const[Option[(Doc, Doc)], AA] = Const {
         val n = optDesc(pprefs, style, info, fa)
         val h = fa.props.help
-        val hdef = Chunk(fa.props.showDefault.map(s => PP.parens(PP.string("default:") <+> PP.string(s))))
-        (n.isEmpty || n.isEmpty).prevent[Option]((extract(n), PP.align(extract(h <<+>> hdef))))
+        val hdef = Chunk(fa.props.showDefault.map(s => (Doc.string("default:") |+| Doc.string(s)).parens))
+        (n.isEmpty || n.isEmpty).prevent[Option]((extract(n), extract(h <<+>> hdef))) //TODO check tabulation
       }
     }).flatten)
   }
@@ -106,7 +104,7 @@ private[opts] trait Help {
   /** Generate the help text for a program. */
   def parserHelp[A](pprefs: ParserPrefs, parser: Parser[A]): ParserHelp = {
     def withTitle(title: String, chunk: Chunk[Doc]): Chunk[Doc] =
-      chunk.map(PP.string(title) <@> _)
+      chunk.map(Doc.string(title).withLine(_))
 
     bodyHelp(vsepChunks(List(withTitle("Available options:", fullDesc(pprefs, parser)),
       withTitle("Available commands:", cmdDesc(parser)))))
@@ -114,6 +112,6 @@ private[opts] trait Help {
 
   /** Generate option summary. */
   def parserUsage[A](pprefs: ParserPrefs, parser: Parser[A], progName: String): Doc =
-    PP.hsep(List("Usage:", progName, PP.align(extract(briefDesc(pprefs, parser)))))
+    Doc.hsep(List(Doc.string("Usage:"), Doc.string(progName), extract(briefDesc(pprefs, parser)))) //TODO colt check align
 
 }

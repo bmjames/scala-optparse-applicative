@@ -5,7 +5,6 @@ import net.bmjames.opts.helpdoc.Chunk
 import scalaz.Functor
 import scalaz.syntax.functor._
 
-import org.kiama.output.PrettyPrinter.Doc
 
 /** A full description for a runnable Parser for a program.
   *

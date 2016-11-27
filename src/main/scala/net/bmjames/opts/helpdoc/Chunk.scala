@@ -1,6 +1,7 @@
 package net.bmjames.opts.helpdoc
 
 import net.bmjames.opts.internal.words
+import net.bmjames.opts.types.Doc
 
 import scalaz.{Applicative, Monoid, MonadPlus}
 import scalaz.std.list._
@@ -9,9 +10,6 @@ import scalaz.std.option._
 import scalaz.syntax.std.option._
 import scalaz.syntax.monadPlus._
 import scalaz.syntax.foldable._
-
-import org.kiama.output.PrettyPrinter.Doc
-import org.kiama.output.{PrettyPrinter => PP}
 
 
 /** The free monoid on a semigroup A */
@@ -67,20 +65,20 @@ object Chunk {
 
     /** Concatenate two Chunks with a space in between. */
     def <<+>>(that: Chunk[Doc]): Chunk[Doc] =
-      chunked[Doc](_ <+> _)(self, that)
+      chunked[Doc](_.withSpace(_))(self, that)
 
     /** Concatenate two Chunks with a softline in between */
     def <</>>(that: Chunk[Doc]): Chunk[Doc] =
-      chunked[Doc](_ </> _)(self, that)
+      chunked[Doc](_.withSoftline(_))(self, that)
   }
 
   /** Concatenate Chunks vertically. */
   def vcatChunks(chunks: List[Chunk[Doc]]): Chunk[Doc] =
-    chunks.foldRight(Chunk.empty[Doc])(chunked(_ <@> _))
+    chunks.foldRight(Chunk.empty[Doc])(chunked(_.withLine(_)))
 
   /** Concatenate Chunks vertically separated by empty lines. */
   def vsepChunks(chunks: List[Chunk[Doc]]): Chunk[Doc] =
-    chunks.foldRight(Chunk.empty[Doc])(chunked((x, y) => x <@> PP.empty <@> y))
+    chunks.foldRight(Chunk.empty[Doc])(chunked((x, y) => x.withLine(Doc.empty).withLine(y)))
 
   def extract[A : Monoid](chunk: Chunk[A]): A =
     chunk.run.orZero
@@ -88,17 +86,18 @@ object Chunk {
   def fromString(s: String): Chunk[Doc] =
     s match {
       case "" => Chunk.empty
-      case s  => Applicative[Chunk].pure(PP.string(s))
+      case s  => Applicative[Chunk].pure(Doc.string(s))
     }
 
   def paragraph(s: String): Chunk[Doc] =
-    words(s).foldRight(Chunk.empty[Doc])((c, cs) => chunked[Doc](_ </> _)(fromString(c), cs))
+    words(s).foldRight(Chunk.empty[Doc])((c, cs) => chunked[Doc](_.withSoftline(_))(fromString(c), cs))
 
   def tabulate(table: List[(Doc, Doc)], size: Int = 24): Chunk[Doc] =
     table match {
       case Nil => Chunk.empty
-      case xs  => Applicative[Chunk].pure(PP.vcat(
-        for ((k, v) <- table) yield PP.indent(PP.padtobreak(size, k) <+> v, 2)
-      ))
+      case xs  => 
+      Applicative[Chunk].pure(
+        xs.map{case (k,v) => Doc.nest(2, Doc.padtobreak(size, k).withSpace(v))}.reduce(_.withLine(_))
+        )
     }
 }
