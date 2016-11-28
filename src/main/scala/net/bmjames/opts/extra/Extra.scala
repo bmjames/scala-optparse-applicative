@@ -62,7 +62,7 @@ private[opts] trait Extra {
           case InfoMsg (_) => ParserHelp.empty
           case _ => usageHelp(Chunk.vcatChunks(List(
             parserUsage(pprefs, i.parser, unwords(progName :: names)).pure[Chunk],
-            i.progDesc.map(Doc.nest(2, _))
+            i.progDesc.map(Doc.indent(2, _))
           )))
         }
 

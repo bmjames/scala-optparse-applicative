@@ -97,7 +97,8 @@ object Chunk {
       case Nil => Chunk.empty
       case xs  => 
       Applicative[Chunk].pure(
-        xs.map{case (k,v) => Doc.nest(2, Doc.padtobreak(size, k).withSpace(v))}.reduce(_.withLine(_))
-        )
+        xs.map { case (k,v) => 
+          Doc.indent(2, Doc.fillBreak(size, k).withSpace(v))
+        }.reduce(_.withLine(_)))
     }
 }
