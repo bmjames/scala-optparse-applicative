@@ -12,25 +12,25 @@ case object EmptyDoc extends Doc
 //A line break
 case object LineDoc extends Doc
 //Nest i spackes after any line break in the Doc.
-case class NestDoc private (i: Int, d: Doc) extends Doc {
+sealed abstract case class NestDoc (i: Int, d: Doc) extends Doc {
   override def toString: String = s"NestDoc($i, Doc(...))"
 }
 //Document representing the some text. text *must* not contain
 //newlines.
-case class TextDoc private (text: String) extends Doc
+sealed abstract case class TextDoc (text: String) extends Doc
 //Document which is the concatenation of 2 other documents.
-case class ConsDoc private (d1: Doc, d2: Doc) extends Doc {
+sealed abstract case class ConsDoc (d1: Doc, d2: Doc) extends Doc {
   override def toString: String = "ConsDoc(...)"
 }
 //A choice between 2 Docs. d1 and d2 must be the same doc when flattened and d1 must be longer
 //Only exposed through group.
-case class UnionDoc private (d1: Doc, d2: Doc) extends Doc {
+sealed abstract case class UnionDoc (d1: Doc, d2: Doc) extends Doc {
   override def toString: String = "UnionDoc(...)"
 }
 //produce a document from the current "column" value.
-case class ColumnDoc private (f: Int => Doc) extends Doc
+sealed abstract case class ColumnDoc (f: Int => Doc) extends Doc
 //produce a document from the current nesting level.
-case class NestingDoc private (f: Int => Doc) extends Doc
+sealed abstract case class NestingDoc (f: Int => Doc) extends Doc
 
 object Doc {
   import scala.language.implicitConversions
@@ -39,16 +39,16 @@ object Doc {
 
   implicit val docMonoid: Monoid[Doc] = new Monoid[Doc] {
     def zero: Doc = empty
-    def append(f1: Doc, f2: => Doc): Doc = ConsDoc(f1, f2)
+    def append(f1: Doc, f2: => Doc): Doc = Doc.append(f1, f2)
   }
 
   //Primatives.
   //use `string` instead as it handles possible newlines.
-  private def text(s: String): Doc = TextDoc(s)
-  def nest(i: Int, d: Doc): Doc = NestDoc(i, d)
-  def append(d1: Doc, d2: Doc) = ConsDoc(d1, d2)
-  def column(f: Int => Doc): Doc = ColumnDoc(f)
-  def nesting(f: Int => Doc): Doc = NestingDoc(f)
+  private def text(s: String): Doc = new TextDoc(s){}
+  def nest(i: Int, d: Doc): Doc = new NestDoc(i, d){}
+  def append(d1: Doc, d2: Doc) = new ConsDoc(d1, d2){}
+  def column(f: Int => Doc): Doc = new ColumnDoc(f){}
+  def nesting(f: Int => Doc): Doc = new NestingDoc(f){}
 
   //constants which are used frequently
   val space = text(" ")
@@ -61,7 +61,7 @@ object Doc {
     case docs => docs.reduceLeft(f)
   }
   //Separate the docs by a space.
-  def hsep(docs: List[Doc]): Doc = foldDoc(docs.intersperse(space))(ConsDoc(_, _))
+  def hsep(docs: List[Doc]): Doc = foldDoc(docs.intersperse(space))(append(_, _))
 
   //Convert a string literal into a Doc interpreting the `\n` chars an line breaks.
   def string(s: String): Doc = stringTramp(s).run
@@ -101,13 +101,13 @@ object Doc {
 
   def enclose(l: Doc, m: Doc, r: Doc): Doc = append(append(l, m), r)
 
-  def group(d: Doc): Doc = UnionDoc(flatten(d), d)
+  def group(d: Doc): Doc = new UnionDoc(flatten(d), d){}
 
   def prettyRender(cols: Int, d: Doc): String = RenderDoc.prettyPrintToString(RenderDoc.fromDoc(cols, d))
 
   def flatten(d: Doc): Doc = flattenCore(d).run
 
-  def flattenCore(d: Doc): Free.Trampoline[Doc] = d match {
+  private def flattenCore(d: Doc): Free.Trampoline[Doc] = d match {
     case EmptyDoc => Trampoline.done(EmptyDoc)
     case LineDoc => Trampoline.done(text(" "))
     case NestDoc(i, d) => Trampoline.suspend(flattenCore(d).map(nest(i, _)))
@@ -115,10 +115,10 @@ object Doc {
     case ConsDoc(d1, d2) => for {
       flatD1 <- Trampoline.suspend(flattenCore(d1))
       flatD2 <- Trampoline.suspend(flattenCore(d2))
-    } yield ConsDoc(flatD1, flatD2)
+    } yield append(flatD1, flatD2)
     case UnionDoc(d, _) => Trampoline.suspend(flattenCore(d))
-    case ColumnDoc(f) => Trampoline.delay(ColumnDoc(f.andThen(flatten _)))
-    case NestingDoc(f) => Trampoline.delay(NestingDoc(f.andThen(flatten _)))
+    case ColumnDoc(f) => Trampoline.delay(column(f.andThen(flatten _)))
+    case NestingDoc(f) => Trampoline.delay(nesting(f.andThen(flatten _)))
   }
 
   final class DocOps(self: Doc) {
