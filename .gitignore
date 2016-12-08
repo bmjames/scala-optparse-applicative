@@ -1,2 +1,4 @@
 .idea*/
 target/
+*sublime-project
+*sublime-workspace

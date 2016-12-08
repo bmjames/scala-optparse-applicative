@@ -13,8 +13,6 @@ import scalaz.syntax.foldable._
 import scalaz.std.option._
 import scalaz.std.list._
 
-import org.kiama.output.PrettyPrinter.Doc
-
 private[opts] trait Builder {
 
   // Since Scalaz has no Read type class, there is no 'auto' function here.

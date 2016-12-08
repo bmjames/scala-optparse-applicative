@@ -11,8 +11,6 @@ import scalaz.{Const, ~>, -\/, \/-}
 import scalaz.syntax.applicative._
 import scalaz.syntax.semigroup._
 
-import org.kiama.output.{PrettyPrinter => PP}
-
 private[opts] trait Extra {
 
   /** A hidden "helper" option which always fails */
@@ -64,7 +62,7 @@ private[opts] trait Extra {
           case InfoMsg (_) => ParserHelp.empty
           case _ => usageHelp(Chunk.vcatChunks(List(
             parserUsage(pprefs, i.parser, unwords(progName :: names)).pure[Chunk],
-            i.progDesc.map(PP.indent(_, 2))
+            i.progDesc.map(Doc.indent(2, _))
           )))
         }
 

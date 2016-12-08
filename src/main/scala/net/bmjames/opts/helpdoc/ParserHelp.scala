@@ -1,14 +1,11 @@
 package net.bmjames.opts.helpdoc
 
+import net.bmjames.opts.types.Doc
 import Chunk._
 import scalaz.{Monoid, Show}
 import scalaz.std.string._
 import scalaz.syntax.semigroup._
 import scalaz.syntax.show._
-
-import org.kiama.output.PrettyPrinter.Doc
-import org.kiama.output.{PrettyPrinter => PP}
-import Pretty._
 
 final case class ParserHelp(error:  Chunk[Doc],
                             header: Chunk[Doc],
@@ -42,7 +39,6 @@ object ParserHelp {
     extract(vsepChunks(List(help.error, help.header, help.usage, help.body, help.footer)))
 
   /** Convert a help text to a String */
-  def renderHelp(cols: Int, help: ParserHelp): String =
-    PP.pretty(helpText(help), cols)
+  def renderHelp(cols: Int, help: ParserHelp): String = Doc.prettyRender(cols, helpText(help))
 
 }
