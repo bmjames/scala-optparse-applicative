@@ -5,7 +5,7 @@ A port of the [optparse-applicative] [1] library to the Scala programming langua
 
 Most functionality has been ported, except completion.
 
-This library depends on [Scalaz] [2] for functional data structures, type classes and combinators.
+This library depends on [Scalaz] [2] for functional data structures, type classes and combinators, and [Kiama] [3] for pretty-printing.
 
 How to get it
 -------------
@@ -18,7 +18,7 @@ Version 0.5 of scala-optparse-applicative is available for Scala 2.10, 2.11 and 
 
 License
 -------
-This library is distributed under a [BSD 3-Clause] [4] license (see `LICENSE`).
+This library is distributed under a [BSD 3-Clause] [4] license (see `LICENSE`). The Kiama library is distributed under the [GNU Lesser GPL v3] [5].
 
 Simple example
 --------------
@@ -76,4 +76,6 @@ To Do
 
 [1]: https://hackage.haskell.org/package/optparse-applicative
 [2]: https://github.com/scalaz/scalaz
+[3]: https://code.google.com/p/kiama/
 [4]: http://opensource.org/licenses/BSD-3-Clause
+[5]: http://www.gnu.org/licenses/lgpl.html
