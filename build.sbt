@@ -6,7 +6,7 @@ name := "scala-optparse-applicative"
 
 scalaVersion := "2.11.8"
 
-crossScalaVersions := List("2.10.6", "2.11.8", "2.12.0")
+crossScalaVersions := List("2.10.6", "2.11.8", "2.12.1")
 
 scalacOptions ++= List(
   "-feature",
