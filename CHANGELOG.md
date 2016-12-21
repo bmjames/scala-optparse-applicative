@@ -1,3 +1,6 @@
+### Version 0.6 (21 Dec 2016)
+* Remove dependency on Kiama (Colt Frederickson)
+
 ### Version 0.5 (5 Nov 2016)
 * Add support for Scala 2.12 (Rob Norris)
 
