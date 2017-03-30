@@ -2,81 +2,187 @@ package net.bmjames.opts.types
 
 import scalaz._, Scalaz._
 import scala.annotation.tailrec
+import scala.collection.immutable.Queue
+import Trampoline.{ suspend, done, delay }
 
-//Based on the paper http://homepages.inf.ed.ac.uk/wadler/papers/prettier/prettier.pdf
-
-sealed abstract class Doc
-
-//No text
-case object EmptyDoc extends Doc
-//A line break
-case object LineDoc extends Doc
-//Nest i spackes after any line break in the Doc.
-sealed abstract case class NestDoc(i: Int, d: Doc) extends Doc {
-  override def toString: String = s"NestDoc($i, Doc(...))"
-}
-//Document representing the some text. text *must* not contain
-//newlines.
-sealed abstract case class TextDoc(text: String) extends Doc
-//Document which is the concatenation of 2 other documents.
-sealed abstract case class ConsDoc(d1: Doc, d2: Doc) extends Doc {
-  override def toString: String = "ConsDoc(...)"
-}
-//A choice between 2 Docs. d1 and d2 must be the same doc when flattened and d1 must be longer
-//Only exposed through group.
-sealed abstract case class UnionDoc(d1: Doc, d2: Doc) extends Doc {
-  override def toString: String = "UnionDoc(...)"
-}
-//produce a document from the current "column" value.
-sealed abstract case class ColumnDoc(f: Int => Doc) extends Doc
-//produce a document from the current nesting level.
-sealed abstract case class NestingDoc(f: Int => Doc) extends Doc
-
+//Doc implementation as laid out in https://www.cs.kent.ac.uk/pubs/2009/2847/content.pdf section 3.3
+//The key is that it's *linear* bounded. Because of scala, we have to use an insane amount of Trampolines
+//to pull it off. That idea taken from here: http://code.ouroborus.net/fp-syd/past/2013/2013-07-Sloane-InstallingTrampolines.pdf
+//Additional combinators adapted from PPrint haskell lib.
+//This is *insanely* ugly encoded in Scala, even the paper was hard to read. I'm very sorry.
 object Doc {
-  import scala.language.implicitConversions
-  //Implicit conversion to give syntax to `Doc`
-  implicit def docToDocOps(d: Doc): DocOps = new DocOps(d)
+  //Type aliases to try and give meaning to all the Ints and Functions
+  type Indent = Int
+  type Width = Int
+  type Layout = String
+  type Position = Int
+  type Remaining = Int
+  type Horizontal = Boolean
+  type Out = Remaining => Free.Trampoline[Layout]
+  type OutGroup = Horizontal => Out => Free.Trampoline[Out]
+  type Dq = Queue[(Position, OutGroup)]
+  type TreeCont = (Position, Dq) => Free.Trampoline[Out]
+  type IW = (Doc.Indent, Width)
+  type Cont = IW => TreeCont => Free.Trampoline[TreeCont]
 
+  final val Empty: Doc = new Doc(_ => (c: TreeCont) => done(c))
   implicit val docMonoid: Monoid[Doc] = new Monoid[Doc] {
-    def zero: Doc = empty
+    def zero: Doc = Empty
     def append(f1: Doc, f2: => Doc): Doc = Doc.append(f1, f2)
   }
 
-  //Primatives.
-  //use `string` instead as it handles possible newlines.
-  private def text(s: String): Doc = new TextDoc(s) {}
-  def nest(i: Int, d: Doc): Doc = new NestDoc(i, d) {}
-  def append(d1: Doc, d2: Doc) = new ConsDoc(d1, d2) {}
-  def column(f: Int => Doc): Doc = new ColumnDoc(f) {}
-  def nesting(f: Int => Doc): Doc = new NestingDoc(f) {}
+  //helpers for pruning, scanning, writing, etc
+  def output(o: Out, r: Remaining, s: String): Free.Trampoline[String] = suspend(o(r).map(s ++ _))
 
-  //constants which are used frequently
-  val space = text(" ")
-  val empty: Doc = EmptyDoc
-  val line: Doc = LineDoc
-  val softLine: Doc = group(line)
-  //Fold up the docs using f, empty if it's Nil.
-  def foldDoc(docs: Seq[Doc])(f: (Doc, Doc) => Doc): Doc = docs match {
-    case Nil => empty
-    case docs => docs.reduceLeft(f)
-  }
-  //Separate the docs by a space.
-  def hsep(docs: List[Doc]): Doc = foldDoc(docs.intersperse(space))(append(_, _))
+  def scan(lengthOfText: Width, outGroup: OutGroup)(cont: TreeCont): Free.Trampoline[TreeCont] =
+    delay(
+      (p: Position, dq: Dq) =>
+        dq.lastOption match {
+          case Some((pos, group)) =>
 
-  //Convert a string literal into a Doc interpreting the `\n` chars an line breaks.
-  def string(s: String): Doc = stringTramp(s).run
+            val obligation = (pos, (h: Horizontal) => (out1: Out) =>
+              suspend(
+                for {
+                  out2 <- outGroup(h)(out1)
+                  out3 <- group(h)(out2)
+                } yield out3))
+            //Add the obligation to the end and see if we can prune
+            prune(cont)(p + lengthOfText, dq.init :+ obligation)
+          case None =>
+            //No choice but to print and move forward
+            suspend(
+              for {
+                out1 <- cont(p + lengthOfText, Queue.empty)
+                out2 <- outGroup(false)(out1)
+              } yield out2)
+        }
+    )
 
-  private def stringTramp(s: String): Free.Trampoline[Doc] =
-    if (s == "") {
-      Trampoline.done(empty)
-    } else if (s.head == '\n') {
-      Trampoline.suspend(stringTramp(s.tail).map(line.append(_)))
-    } else {
-      val (xs, ys) = s.span(_ != '\n')
-      Trampoline.suspend(stringTramp(ys).map(text(xs).append(_)))
-    }
+  def prune(cont1: TreeCont): TreeCont =
+    (p: Position, dq: Dq) =>
+      done(
+        (r: Remaining) =>
+          dq.dequeueOption match {
+            case Some(((s, grp), tail)) =>
+              if (p > s + r) {
+                suspend(
+                  for {
+                    cont2 <- prune(cont1)(p, tail)
+                    out <- grp(false)(cont2)
+                    layout <- out(r)
+                  } yield layout)
+              } else {
+                suspend(
+                  for {
+                    out <- cont1(p, dq)
+                    layout <- out(r)
+                  } yield layout)
+              }
 
-  def width(d: Doc, f: Int => Doc): Doc = column(k => d.append(column(k2 => f(k2 - k))))
+            case None =>
+              suspend(
+                for {
+                  out <- cont1(p, Queue.empty)
+                  layout <- out(r)
+                } yield layout)
+          }
+      )
+
+  def leave(cont: TreeCont): TreeCont =
+    (p: Position, dq: Dq) =>
+      if (dq.isEmpty) {
+        cont(p, Queue.empty)
+      } else if (dq.length == 1) {
+        val (s1, group1) = dq.last
+        suspend(
+          for {
+            out1 <- cont(p, Queue.empty)
+            out2 <- group1(true)(out1)
+          } yield out2)
+      } else {
+        val (s1, group1) = dq.last
+        val (s2, group2) = dq.init.last
+        val obligation = (s2, (h: Horizontal) =>
+          (out1: Out) => {
+            val out3 =
+              (r: Remaining) =>
+                suspend(
+                  for {
+                    out2 <- group1(p <= s1 + r)(out1)
+                    layout <- out2(r)
+                  } yield layout)
+            suspend(group2(h)(out3))
+          })
+        cont(p, dq.init.init :+ obligation)
+      }
+
+  //Primatives for providing an instance for Doc.
+  def append(d1: Doc, d2: Doc): Doc = new Doc(iw => cont1 =>
+    suspend(
+      for {
+        cont2 <- d2(iw)(cont1)
+        c3 <- d1(iw)(cont2)
+      } yield c3))
+
+  def group(d: Doc): Doc = new Doc(iw => cont1 => {
+    suspend(d(iw)(leave(cont1)).map { cont2 =>
+      (pos: Position, dq: Dq) => {
+        //obligation to write
+        val obligation = (_: Horizontal) => (o: Out) => done(o)
+        cont2(pos, dq :+ ((pos, obligation)))
+      }
+    })
+  })
+
+  /**
+   * Output text on the line if horizontal is true, otherwise `\n` and indent.
+   */
+  private def line(text: String): Doc = new Doc({
+    case (i, w) =>
+      val textLength = text.length
+      val outLine =
+        (horizontal: Horizontal) => (o: Out) =>
+          done(
+            (r: Remaining) =>
+              if (horizontal)
+                output(o, r - textLength, text)
+              else
+                output(o, w - i, "\n" + " " * i)
+          )
+      scan(textLength, outLine)
+  })
+  def nest(j: Indent, d: Doc): Doc = new Doc({ case (i, w) => d((i + j, w)) })
+
+  def text(s: String): Doc = new Doc({ iw =>
+    val stringLength = s.length
+    val outGroupFunc =
+      (_: Horizontal) => (o: Out) =>
+        done((r: Remaining) => output(o, r - stringLength, s))
+    scan(stringLength, outGroupFunc)(_)
+  })
+
+  def column(f: Int => Doc): Doc = new Doc({
+    case (indent, width) => cont =>
+      done(
+        (position: Position, dq: Dq) =>
+          done(
+            (remain: Remaining) =>
+              for {
+                cont1 <- f(width - remain)(indent, width)(cont)
+                out <- cont1(position, dq)
+                bp <- out(remain)
+              } yield bp
+          )
+      )
+  })
+
+  def nesting(f: Int => Doc): Doc = new Doc({ case iw @ (i, _) => f(i)(iw) })
+
+  //Derived combinators
+
+  def hang(d: Doc, i: Indent): Doc = align(nest(i, d))
+
+  def indent(i: Indent, d: Doc): Doc = hang(spaces(i).append(d), i)
 
   /**
    * Append spaces to d until it's requestedSpaces. If d is already wide enough, increase nesting
@@ -91,109 +197,73 @@ object Doc {
     }
   })
 
-  def hang(i: Int, d: Doc): Doc = align(nest(i, d))
+  def string(s: String): Doc =
+    if (s == "") {
+      Empty
+    } else if (s.head == '\n') {
+      line.append(string(s.tail))
+    } else {
+      val (beforeNewLine, afterNewline) = s.span(_ != '\n')
+      text(beforeNewLine).append(string(afterNewline))
+    }
 
-  def indent(i: Int, d: Doc): Doc = hang(i, spaces(i).append(d))
+  def line: Doc = line(" ")
+
+  def linebreak: Doc = line("")
+
+  def width(d: Doc, f: Int => Doc): Doc = column(j => append(d, column(k => f(k - j))))
 
   def align(d: Doc): Doc = column(current => nesting(indent => nest(current - indent, d)))
 
-  def spaces(i: Int): Doc = text(" " * i)
-
-  def enclose(l: Doc, m: Doc, r: Doc): Doc = append(append(l, m), r)
-
-  def group(d: Doc): Doc = new UnionDoc(flatten(d), d) {}
-
-  def prettyRender(cols: Int, d: Doc): String = RenderDoc.prettyPrintToString(RenderDoc.fromDoc(cols, d))
-
-  def flatten(d: Doc): Doc = flattenCore(d).run
-
-  private def flattenCore(d: Doc): Free.Trampoline[Doc] = d match {
-    case EmptyDoc => Trampoline.done(EmptyDoc)
-    case LineDoc => Trampoline.done(text(" "))
-    case NestDoc(i, d) => Trampoline.suspend(flattenCore(d).map(nest(i, _)))
-    case t: TextDoc => Trampoline.done(t)
-    case ConsDoc(d1, d2) => for {
-      flatD1 <- Trampoline.suspend(flattenCore(d1))
-      flatD2 <- Trampoline.suspend(flattenCore(d2))
-    } yield append(flatD1, flatD2)
-    case UnionDoc(d, _) => Trampoline.suspend(flattenCore(d))
-    case ColumnDoc(f) => Trampoline.delay(column(f.andThen(flatten _)))
-    case NestingDoc(f) => Trampoline.delay(nesting(f.andThen(flatten _)))
+  //Fold up the docs using f, empty if it's Nil.
+  def foldDoc(docs: Seq[Doc])(f: (Doc, Doc) => Doc): Doc = docs match {
+    case Nil => Empty
+    case docs => docs.reduceLeft(f)
   }
 
-  final class DocOps(self: Doc) {
-    def append(d2: Doc): Doc = Doc.append(self, d2)
-    def withSpace(d: Doc): Doc = enclose(self, space, d)
-    def withSoftline(d: Doc): Doc = enclose(self, softLine, d)
-    def withLine(d: Doc): Doc = enclose(self, line, d)
-    def brackets: Doc = enclose(text("["), self, text("]"))
-    def parens: Doc = enclose(text("("), self, text(")"))
-    def align: Doc = column(current => nesting(indent => nest(current - indent, self)))
+
+  //Separate the docs by a space.
+  def hsep(docs: List[Doc]): Doc = foldDoc(docs.intersperse(space))(append(_, _))
+
+  def spaces(n: Int): Doc =
+    if (n <= 0)
+      Empty
+    else
+      text(" " * n)
+
+  /**
+   * Space if the resulting output fits on the line, otherwise it behaves like line.
+   */
+  def softLine: Doc = group(line)
+
+  def space: Doc = char(' ')
+
+  def char(c: Char): Doc = if (c == '\n') line else text(c.toString)
+
+  def enclose(left: Doc, d: Doc, right: Doc): Doc = left.append(d).append(right)
+
+  def prettyRender(w: Width, doc: Doc): String = {
+    val end = (_: Position, _: Dq) => done((_: Remaining) => done(""))
+
+    val trampResult = for {
+      cont <- doc(0 -> w)(end)
+      out <- cont(0, Queue.empty)
+      result <- out(w)
+    } yield result
+    trampResult.run
   }
 }
 
-//ADT for a doc which can be rendered.
-sealed abstract class RenderDoc
+class Doc(step: Doc.Cont) { self =>
+  import Doc._
+  def apply(iw: IW): TreeCont => Free.Trampoline[TreeCont] = step(iw)
 
-//Nothing
-case object EmptyRenderDoc extends RenderDoc
-//Render s followed by next
-case class TextRenderDoc(s: String, next: RenderDoc) extends RenderDoc
-//Render newline followed by i spaces and then d
-case class LineRenderDoc(i: Int, d: RenderDoc) extends RenderDoc
-
-object RenderDoc {
-  //Convert a document to a RenderDoc with 0 spaces
-  def fromDoc(width: Int, d: Doc): RenderDoc = findBest(width, 0, List((0, d)))
-
-  //find the best layout using all the options in `l`. 
-  def findBest(allowedWidth: Int, amountTaken: Int, l: List[(Int, Doc)]): RenderDoc = findBestCore(allowedWidth, amountTaken, l).run
-
-  private def findBestCore(allowedWidth: Int, amountTaken: Int, l: List[(Int, Doc)]): Free.Trampoline[RenderDoc] = l match {
-    case Nil => Trampoline.done(EmptyRenderDoc)
-    case (i, EmptyDoc) :: tail => Trampoline.suspend(findBestCore(allowedWidth, amountTaken, tail))
-    case (i, ConsDoc(d1, d2)) :: tail => Trampoline.suspend(findBestCore(allowedWidth, amountTaken, (i, d1) :: (i, d2) :: tail))
-    case (i, NestDoc(j, d)) :: tail => Trampoline.suspend(findBestCore(allowedWidth, amountTaken, (i + j, d) :: tail))
-    case (i, TextDoc(s)) :: tail =>
-      Trampoline.suspend(findBestCore(allowedWidth, amountTaken + s.length, tail).map[RenderDoc](TextRenderDoc(s, _)))
-    case (i, LineDoc) :: tail => Trampoline.suspend(findBestCore(allowedWidth, i, tail).map(LineRenderDoc(i, _)))
-    case (i, UnionDoc(d1, d2)) :: tail =>
-      Trampoline.suspend(findBestCore(allowedWidth, amountTaken, (i, d1) :: tail)).flatMap { d1Result =>
-        if (fits(allowedWidth - amountTaken, d1Result)) {
-          Trampoline.done(d1Result)
-        } else {
-          Trampoline.suspend(findBestCore(allowedWidth, amountTaken, (i, d2) :: tail))
-        }
-      }
-    case (i, ColumnDoc(f)) :: tail => Trampoline.suspend(findBestCore(allowedWidth, amountTaken, (i, f(amountTaken)) :: tail))
-    case (i, NestingDoc(f)) :: tail => Trampoline.suspend(findBestCore(allowedWidth, amountTaken, (i, f(i)) :: tail))
-  }
-
-  /**
-   * Does the RenderDoc fit into the width.
-   */
-  @tailrec
-  def fits(width: Int, doc: RenderDoc): Boolean = (width, doc) match {
-    case (width, _) if (width < 0) => false
-    case (width, EmptyRenderDoc) => true
-    case (width, TextRenderDoc(s, next)) => fits(width - s.length, next)
-    case (width, LineRenderDoc(_, _)) => true
-  }
-
-  /**
-   * Render the document into a pretty string.
-   */
-  def prettyPrintToString(r: RenderDoc): String = {
-    @tailrec
-    def go(r: RenderDoc, sb: StringBuilder): StringBuilder = r match {
-      case TextRenderDoc(s, next) =>
-        sb.append(s)
-        go(next, sb)
-      case LineRenderDoc(i, d) =>
-        sb.append('\n').append(" " * i)
-        go(d, sb)
-      case EmptyRenderDoc => sb
-    }
-    go(r, new StringBuilder()).toString
-  }
+  def append(d2: Doc): Doc = Doc.append(self, d2)
+  def withSpace(d: Doc): Doc = enclose(self, space, d)
+  def withSoftline(d: Doc): Doc = enclose(self, softLine, d)
+  def withLine(d: Doc): Doc = enclose(self, line, d)
+  def brackets: Doc = enclose(text("["), self, text("]"))
+  def parens: Doc = enclose(text("("), self, text(")"))
+  def align: Doc = column(current => nesting(indent => nest(current - indent, self)))
+  def pretty(width: Width): String = prettyRender(width, self)
 }

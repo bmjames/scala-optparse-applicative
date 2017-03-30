@@ -39,6 +39,6 @@ object ParserHelp {
     extract(vsepChunks(List(help.error, help.header, help.usage, help.body, help.footer)))
 
   /** Convert a help text to a String */
-  def renderHelp(cols: Int, help: ParserHelp): String = Doc.prettyRender(cols, helpText(help))
+  def renderHelp(cols: Int, help: ParserHelp): String = helpText(help).pretty(cols)
 
 }
