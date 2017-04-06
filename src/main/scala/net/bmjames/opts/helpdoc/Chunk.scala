@@ -78,7 +78,7 @@ object Chunk {
 
   /** Concatenate Chunks vertically separated by empty lines. */
   def vsepChunks(chunks: List[Chunk[Doc]]): Chunk[Doc] =
-    chunks.foldRight(Chunk.empty[Doc])(chunked((x, y) => x.withLine(Doc.empty).withLine(y)))
+    chunks.foldRight(Chunk.empty[Doc])(chunked((x, y) => x.withLine(Doc.Empty).withLine(y)))
 
   def extract[A : Monoid](chunk: Chunk[A]): A =
     chunk.run.orZero
