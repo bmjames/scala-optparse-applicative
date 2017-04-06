@@ -62,12 +62,12 @@ object Doc {
     (p: Position, dq: Dq) =>
       done(
         (r: Remaining) =>
-          dq.dequeueOption match {
-            case Some(((s, grp), tail)) =>
+          dq.headOption match {
+            case Some((s, grp)) =>
               if (p > s + r) {
                 suspend(
                   for {
-                    cont2 <- prune(cont1)(p, tail)
+                    cont2 <- prune(cont1)(p, dq.tail)
                     out <- grp(false)(cont2)
                     layout <- out(r)
                   } yield layout)
