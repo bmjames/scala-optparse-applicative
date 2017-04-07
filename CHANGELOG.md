@@ -1,3 +1,6 @@
+### Version 0.7 (TBD)
+* Linear bounded pretty printer implementation (Colt Frederickson)
+
 ### Version 0.6 (21 Dec 2016)
 * Remove dependency on Kiama (Colt Frederickson)
 
