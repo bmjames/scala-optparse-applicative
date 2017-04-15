@@ -10,11 +10,11 @@ This library depends on [Scalaz] [2] for functional data structures, type classe
 How to get it
 -------------
 
-Version 0.6 of scala-optparse-applicative is available for Scala 2.10, 2.11 and 2.12.
+Version 0.7 of scala-optparse-applicative is available for Scala 2.10, 2.11 and 2.12.
 
     resolvers += "bmjames Bintray Repo" at "https://dl.bintray.com/bmjames/maven"
 
-    libraryDependencies += "net.bmjames" %% "scala-optparse-applicative" % "0.6"
+    libraryDependencies += "net.bmjames" %% "scala-optparse-applicative" % "0.7"
 
 License
 -------
