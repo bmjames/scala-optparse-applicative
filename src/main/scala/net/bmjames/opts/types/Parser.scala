@@ -16,10 +16,10 @@ sealed trait Parser[A] {
       case BindP(p, k)   => BindP(p, k andThen (_ map f))
     }
 
-  final def mapPoly[B](f: OptHelpInfo => (Opt ~> ({type λ[α]=Const[B,α]})#λ)): List[B] =
+  final def mapPoly[B](f: OptHelpInfo => (Opt ~> Const[B,?])): List[B] =
     mapParser[A, B](f, this)
 
-  final def treeMap[B](g: OptHelpInfo => (Opt ~> ({type λ[α]=Const[B,α]})#λ)): OptTree[B] =
+  final def treeMap[B](g: OptHelpInfo => (Opt ~> Const[B,?])): OptTree[B] =
     treeMapParser[A, B](g, this)
 
   /** Alias for <+> */

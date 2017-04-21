@@ -19,3 +19,5 @@ scalacOptions ++= List(
 libraryDependencies ++= List(
   "org.scalaz" %% "scalaz-core" % "7.2.7",
   "org.scalacheck" %% "scalacheck" % "1.12.6" % "test")
+
+addCompilerPlugin("org.spire-math" % "kind-projector" % "0.9.3" cross CrossVersion.binary)
