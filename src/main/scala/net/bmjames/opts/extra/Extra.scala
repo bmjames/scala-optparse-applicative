@@ -51,7 +51,7 @@ private[opts] trait Extra {
         case _ => ExitSuccess
       }
 
-      def withContext[AA, B](ctx: Context, pinfo: ParserInfo[AA], f: List[String] => ParserInfo ~> (({type λ[α]=Const[B,α]})#λ)): B =
+      def withContext[AA, B](ctx: Context, pinfo: ParserInfo[AA], f: List[String] => ParserInfo ~> (Const[B,?])): B =
         ctx match {
           case NullContext      => f(Nil)(pinfo).getConst
           case HasContext(n, i) => f(n)(i).getConst
@@ -83,7 +83,7 @@ private[opts] trait Extra {
         if (showFullHelp) headerHelp(i.header) |+| footerHelp(i.footer) |+| parserHelp(pprefs, i.parser)
         else ParserHelp.empty
 
-      val h = withContext[A, ParserHelp](ctx, pinfo, names => new (ParserInfo ~> (({type λ[α]=Const[ParserHelp,α]})#λ)) {
+      val h = withContext[A, ParserHelp](ctx, pinfo, names => new (ParserInfo ~> (Const[ParserHelp,?])) {
         def apply[AA](fa: ParserInfo[AA]): Const[ParserHelp, AA] = Const {
           baseHelp(fa) |+| usage_help(progName, names, fa) |+| error_help
         }
