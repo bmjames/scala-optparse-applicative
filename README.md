@@ -1,11 +1,11 @@
 scala-optparse-applicative
 ==========================
 
-A port of the [optparse-applicative] [1] library to the Scala programming language.
+A port of the [optparse-applicative][1] library to the Scala programming language.
 
 Most functionality has been ported, except completion.
 
-This library depends on [Scalaz] [2] for functional data structures, type classes and combinators.
+This library depends on [Scalaz][2] for functional data structures, type classes and combinators.
 
 How to get it
 -------------
@@ -18,7 +18,7 @@ Version 0.7 of scala-optparse-applicative is available for Scala 2.10, 2.11 and 
 
 License
 -------
-This library is distributed under a [BSD 3-Clause] [3] license (see `LICENSE`).
+This library is distributed under a [BSD 3-Clause][3] license (see `LICENSE`).
 
 Simple example
 --------------
