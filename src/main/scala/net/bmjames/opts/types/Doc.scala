@@ -1,7 +1,6 @@
 package net.bmjames.opts.types
 
 import scalaz._, Scalaz._
-import scala.annotation.tailrec
 import scala.collection.immutable.Queue
 import Trampoline.{ suspend, done, delay }
 
