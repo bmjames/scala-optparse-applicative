@@ -4,9 +4,9 @@ organization := "net.bmjames"
 
 name := "scala-optparse-applicative"
 
-scalaVersion := "2.11.8"
+scalaVersion := "2.11.12"
 
-crossScalaVersions := List("2.10.6", "2.11.8", "2.12.1")
+crossScalaVersions := List("2.10.7", "2.11.12", "2.12.4")
 
 scalacOptions ++= List(
   "-feature",
@@ -17,7 +17,7 @@ scalacOptions ++= List(
   "-language:higherKinds")
 
 libraryDependencies ++= List(
-  "org.scalaz" %% "scalaz-core" % "7.2.7",
-  "org.scalacheck" %% "scalacheck" % "1.12.6" % "test")
+  "org.scalaz" %% "scalaz-core" % "7.2.20",
+  "org.scalacheck" %% "scalacheck" % "1.13.5" % "test")
 
-addCompilerPlugin("org.spire-math" % "kind-projector" % "0.9.3" cross CrossVersion.binary)
+addCompilerPlugin("org.spire-math" % "kind-projector" % "0.9.6" cross CrossVersion.binary)
