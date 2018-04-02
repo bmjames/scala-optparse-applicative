@@ -1,7 +1,6 @@
 package net.bmjames.opts.internal
 
 import scalaz._
-import scalaz.Id.Id
 import scalaz.WriterT.{writerT, writerTHoist}
 import scalaz.EitherT.eitherTHoist
 import scalaz.syntax.monadPlus._
